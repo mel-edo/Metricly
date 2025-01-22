@@ -1,0 +1,5 @@
+Flask==2.3.2
+Flask-SQLAlchemy==3.0.0
+Flask-Cors==4.0.0
+psutil==5.9.5
+docker==6.0.1
