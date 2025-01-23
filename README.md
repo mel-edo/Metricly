@@ -29,4 +29,4 @@
 - Testing
 - Update .env and requirements
 - Figure out what to do with package.json and package-lock.json
-- Put all __pycache__ files in .gitignore
+- ~~Put all __pycache__ files in .gitignore~~
