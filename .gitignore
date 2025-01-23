@@ -1,5 +1,5 @@
 node_modules
 Documents
-__pycache__
+**/__pycache__/
 .env
 instance/
