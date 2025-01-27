@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Metricly</title>
+    <!-- Materialize CSS -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css" rel="stylesheet">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+    <nav>
+        <div class="nav-wrapper grey darken-3">
+            <a href="#" class="brand-logo center">Metricly</a>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="row">
+            <div class="col s12">
+                <h4>System Metrics</h4>
+                <div id="system-metrics" class="card-panel">
+                    <p>Loading system metrics...</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col s12">
+                <h4>Docker Metrics</h4>
+                <div id="docker-metrics" class="card-panel">
+                    <p>Loading Docker metrics...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Materialize JavaScript -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+    <script>
+        async function fetchMetrics() {
+            try {
+                // Fetch system metrics
+                const systemResponse = await fetch('/metrics/system');
+                const systemData = await systemResponse.json();
+                document.getElementById('system-metrics').innerHTML = `
+                    <p><strong>CPU Usage:</strong> ${systemData.cpu_percent}</p>
+                    <p><strong>Memory Info:</strong></p>
+                    <ul>
+                        <li>Total: ${systemData.memory_info.total}</li>
+                        <li>Available: ${systemData.memory_info.available}</li>
+                        <li>Used: ${systemData.memory_info.used}</li>
+                        <li>Free: ${systemData.memory_info.free}</li>
+                        <li>Percent: ${systemData.memory_info.percent}</li>
+                    </ul>
+                    <p><strong>Disk Usage:</strong></p>
+                    <ul>
+                        <li>Total: ${systemData.disk_usage.total}</li>
+                        <li>Used: ${systemData.disk_usage.used}</li>
+                        <li>Free: ${systemData.disk_usage.free}</li>
+                        <li>Percent: ${systemData.disk_usage.percent}</li>
+                    </ul>
+                    <p><strong>Network Stats:</strong></p>
+                    <ul>
+                        <li>Bytes Sent: ${systemData.network_stats.bytes_sent}</li>
+                        <li>Bytes Received: ${systemData.network_stats.bytes_recv}</li>
+                        <li>Packets Sent: ${systemData.network_stats.packets_sent}</li>
+                        <li>Packets Received: ${systemData.network_stats.packets_recv}</li>
+                    </ul>
+                `;
+
+                // Fetch Docker metrics
+                const dockerResponse = await fetch('/metrics/docker');
+                const dockerData = await dockerResponse.json();
+                let dockerMetricsHTML = '';
+                dockerData.forEach(container => {
+                    dockerMetricsHTML += `
+                        <div class="container-metric card-panel">
+                            <p><strong>Container Name:</strong> ${container.name}</p>
+                            <p><strong>CPU Percent:</strong> ${container.cpu_percent}</p>
+                            <p><strong>Memory Usage:</strong> ${container.memory_usage}</p>
+                            <p><strong>Network IO:</strong> ${JSON.stringify(container.network_io)}</p>
+                        </div>
+                    `;
+                });
+                document.getElementById('docker-metrics').innerHTML = dockerMetricsHTML;
+            } catch (error) {
+                console.error('Error fetching metrics:', error);
+            }
+        }
+
+        // Fetch metrics every 5 seconds
+        fetchMetrics();
+        setInterval(fetchMetrics, 5000);
+    </script>
+</body>
+</html>
