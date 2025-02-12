@@ -1,4 +1,7 @@
+import datetime
 import psutil
+
+from app.models.database import Metric, db
 
 
 def convert_bytes(num_bytes):
@@ -7,7 +10,7 @@ def convert_bytes(num_bytes):
             return f"{num_bytes:.2f} {unit}"
         num_bytes /= 1024
 
-def get_system_metrics():
+def get_system_metrics(current_server_ip):
 
     system_metrics = {
         'cpu_percent': f"{psutil.cpu_percent(interval=1)}%",
@@ -31,5 +34,14 @@ def get_system_metrics():
             'packets_recv': psutil.net_io_counters(pernic=False).packets_recv
         }
     }
+    # Store in database
+    new_metric = Metric(
+        metric_name='system',
+        metric_value=psutil.cpu_percent(),
+        timestamp=datetime.now(),
+        server_ip=current_server_ip
+    )
+    db.session.add(new_metric)
+    db.session.commit()
 
     return system_metrics 

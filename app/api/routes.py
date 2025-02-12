@@ -1,7 +1,8 @@
+import docker
 from flask import Blueprint, jsonify, request
 from app.metrics.system_metrics import get_system_metrics
 from app.metrics.docker_metrics import get_docker_metrics
-from app.models.database import db, Server
+from app.models.database import Metric, db, Server
 import subprocess, re
 
 
@@ -39,3 +40,28 @@ def scan_network():
     
     db.session.commit()
     return jsonify({'message': 'Network scan complete', 'ip_addresses': ip_addresses}), 200
+
+@api_bp.route('/servers/<ip>/metrics', methods=['GET'])
+def get_server_metrics(ip):
+    # Logic to fetch historical metrics from database
+    metrics = Metric.query.filter_by(server_ip=ip).limit(100).all()
+    return jsonify([m.to_dict() for m in metrics])
+
+@api_bp.route('/containers/<container_name>/<action>', methods=['POST'])
+def container_action(container_name, action):
+    try:
+        server_ip = request.args.get('server')
+        # Logic to connect to specific server's docker daemon
+        client = docker.DockerClient(base_url=f"tcp://{server_ip}:2375")
+        container = client.containers.get(container_name)
+        
+        if action == 'restart':
+            container.restart()
+        elif action == 'stop':
+            container.stop()
+        elif action == 'start':
+            container.start()
+            
+        return jsonify({'message': f'Container {action} successful'}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
