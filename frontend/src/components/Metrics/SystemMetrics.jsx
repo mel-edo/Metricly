@@ -1,27 +1,21 @@
-import { Card, CardContent, Grid, Typography, Skeleton } from '@mui/material';
+import { Card, CardContent, Typography, Skeleton, Grid } from '@mui/material';
 
 export const SystemMetrics = ({ system, isLoading }) => {
-  // Loading skeleton simulation
-  if (isLoading) {
+  console.log("DEBUG: SystemMetrics received:", system);  // ✅ Log received system data
+
+  if (isLoading || !system) {
     return (
       <Card sx={{ mb: 3 }}>
         <CardContent>
           <Typography variant="h5" gutterBottom>
             <Skeleton width="40%" />
           </Typography>
-          <Grid container spacing={2}>
-            {[1, 2, 3, 4].map((i) => (
-              <Grid item xs={12} sm={6} key={i}>
-                <Skeleton variant="rectangular" height={60} />
-              </Grid>
-            ))}
-          </Grid>
+          <Typography>Loading system metrics...</Typography>
         </CardContent>
       </Card>
     );
   }
 
-  // Actual content when data is loaded
   return (
     <Card sx={{ mb: 3 }}>
       <CardContent>
@@ -29,24 +23,17 @@ export const SystemMetrics = ({ system, isLoading }) => {
           System Metrics
         </Typography>
         <Grid container spacing={2}>
-          <MetricItem label="CPU Usage" value={system?.cpu_percent} />
-          <MetricItem label="Memory Used" value={system?.memory_info.used} />
-          <MetricItem label="Disk Free" value={system?.disk_usage.free} />
-          <MetricItem label="Network Sent" value={system?.network_stats.bytes_sent} />
+          <Grid item xs={12}>
+            <Typography>CPU Usage: {system?.cpu_percent || "N/A"}%</Typography>
+          </Grid>
+          <Grid item xs={12}>
+            <Typography>Memory Used: {system?.memory_info?.used || "N/A"}</Typography>
+          </Grid>
+          <Grid item xs={12}>
+            <Typography>Disk Free: {system?.disk_usage?.free || "N/A"}</Typography>
+          </Grid>
         </Grid>
       </CardContent>
     </Card>
   );
 };
-
-// Reusable metric display component
-const MetricItem = ({ label, value }) => (
-  <Grid item xs={12} sm={6}>
-    <Typography variant="body1" sx={{ fontWeight: 500 }}>
-      {label}:
-    </Typography>
-    <Typography variant="body2" color="text.secondary">
-      {value || 'N/A'}
-    </Typography>
-  </Grid>
-);

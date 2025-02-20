@@ -15,60 +15,78 @@ export default function App() {
   const [servers, setServers] = useState([]);
   const [currentServer, setCurrentServer] = useState(null);
   const [mobileOpen, setMobileOpen] = useState(false);
-  
-  const {
-    system,
-    docker,
-    historical,
-    alerts,
-    isLoading,
-    setMetrics
-  } = useServerMetrics(currentServer);
+  const [error, setError] = useState(null);
+  const [alerts, setAlerts] = useState([]);  // ✅ Added missing alerts state
+
+  const { system, docker, historical, isLoading } = useServerMetrics(currentServer);
 
   // Fetch initial server list
   useEffect(() => {
-    fetch('/api/servers')
+    fetch('/metrics/servers')
       .then(res => res.json())
-      .then(setServers)
-      .catch(console.error);
+      .then(data => {
+        console.log('Fetched servers:', data);
+        setServers(data);
+      })
+      .catch(err => {
+        console.error('Error fetching servers:', err);
+        setError('Failed to fetch servers.');
+      });
   }, []);
 
   const handleAddServer = (ip) => {
-    fetch('/api/servers', {
+    fetch('/metrics/servers', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ ip_address: ip }),
     })
-      .then(() => fetch('/api/servers'))
-      .then(res => res.json())
-      .then(setServers);
+    .then(res => {
+      if (!res.ok) throw new Error('Failed to add server');
+      return fetch('/metrics/servers');
+    })
+    .then(res => res.json())
+    .then(data => setServers(data))
+    .catch(err => {
+      console.error('Error adding server:', err);
+      setError('Failed to add server. Try again.');
+    });
+  };
+
+  const handleRemoveServer = (ip) => {
+    fetch(`/metrics/servers/${ip}`, { method: 'DELETE' })
+    .then(res => res.json())
+    .then(data => {
+        console.log("Server removed:", data);
+        setServers(prevServers => prevServers.filter(server => server.ip_address !== ip));
+    })
+    .catch(err => console.error("Error removing server:", err));
   };
 
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
       <Sidebar mobileOpen={mobileOpen} setMobileOpen={setMobileOpen}>
-        <ServerList
-          servers={servers}
-          currentServer={currentServer}
-          setCurrentServer={setCurrentServer}
-        />
-      </Sidebar>
-
-      <Box component="main" sx={{ flexGrow: 1, p: 3, mt: 8 }}>
-        <Container maxWidth="xl">
-          {alerts.length > 0 && <AlertsList alerts={alerts} setAlerts={alerts => setMetrics(prev => ({ ...prev, alerts }))} />}
-          
-          <SystemCharts historical={historical} system={system} />
-          <SystemMetrics system={system} isLoading={isLoading.system} />
-          <DockerContainers 
-            docker={docker} 
-            isLoading={isLoading.docker}
-            currentServer={currentServer}
+        {error ? <p style={{ color: 'red' }}>{error}</p> : null}
+        {servers.length === 0 ? (
+          <p>No servers available. Add a server or check API response.</p>
+        ) : (
+          <ServerList 
+            servers={servers} 
+            currentServer={currentServer} 
+            setCurrentServer={setCurrentServer} 
+            handleRemoveServer={handleRemoveServer}  // Pass handleRemoveServer as a prop
           />
+        )}
+      </Sidebar>
+      <Container>
+        <Box>
           <ServerForm onAddServer={handleAddServer} />
-        </Container>
-      </Box>
+          <AlertsList alerts={alerts} />
+          <SystemMetrics system={system} isLoading={isLoading} />
+          <DockerContainers docker={docker} isLoading={isLoading} currentServer={currentServer} />
+          <SystemCharts data={historical} />
+        </Box>
+      </Container>
     </ThemeProvider>
   );
 }

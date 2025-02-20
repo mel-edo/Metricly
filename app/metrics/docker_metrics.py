@@ -37,11 +37,11 @@ def get_docker_metrics():
             
             metrics = {
                 'name': container.name,
-                'cpu_percent': f"{calculate_cpu_percent(stats)}%", 
-                'memory_usage': convert_bytes_to_human_readable(stats['memory_stats']['usage']),  
+                'cpu_percent': calculate_cpu_percent(stats),  # ✅ Ensure float type
+                'memory_usage': convert_bytes_to_human_readable(stats.get('memory_stats', {}).get('usage', 0)),  
                 'network_io': {
-                    'rx_bytes': convert_bytes_to_human_readable(stats['networks'].get('eth0', {}).get('rx_bytes', 0)),
-                    'tx_bytes': convert_bytes_to_human_readable(stats['networks'].get('eth0', {}).get('tx_bytes', 0)), 
+                    'rx_bytes': convert_bytes_to_human_readable(stats.get('networks', {}).get('eth0', {}).get('rx_bytes', 0)),
+                    'tx_bytes': convert_bytes_to_human_readable(stats.get('networks', {}).get('eth0', {}).get('tx_bytes', 0)), 
                 },
             }
             container_metrics.append(metrics)
@@ -49,5 +49,3 @@ def get_docker_metrics():
             print(f"Error fetching stats for {container.name}: {e}")
 
     return container_metrics
-
-print(get_docker_metrics())

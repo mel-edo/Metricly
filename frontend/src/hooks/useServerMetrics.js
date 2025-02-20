@@ -1,5 +1,4 @@
-// src/hooks/useServerMetrics.js
-import { useState, useEffect } from 'react';
+import { useState, useEffect } from "react";
 
 export const useServerMetrics = (currentServer) => {
   const [metrics, setMetrics] = useState({
@@ -7,55 +6,43 @@ export const useServerMetrics = (currentServer) => {
     docker: [],
     historical: [],
     alerts: [],
-    isLoading: { system: true, docker: true }
+    isLoading: true
   });
 
-  const checkThresholds = (systemMetrics) => {
-    const newAlerts = [];
-    if (parseFloat(systemMetrics?.cpu_percent) > 90) {
-      newAlerts.push(`High CPU Usage: ${systemMetrics.cpu_percent}`);
-    }
-    if (parseFloat(systemMetrics?.memory_info.percent) > 85) {
-      newAlerts.push(`High Memory Usage: ${systemMetrics.memory_info.percent}`);
-    }
-    return newAlerts;
-  };
-
   useEffect(() => {
-    const fetchMetrics = async () => {
-      if (!currentServer) return;
+    if (!currentServer) return;
 
+    console.log("Fetching metrics for:", currentServer.ip_address);
+
+    const fetchData = async () => {
       try {
-        // System metrics
         const systemRes = await fetch(`/metrics/system?server=${currentServer.ip_address}`);
-        const systemData = await systemRes.json();
-        
-        // Docker metrics
+        const systemData = systemRes.ok ? await systemRes.json() : {};
+
         const dockerRes = await fetch(`/metrics/docker?server=${currentServer.ip_address}`);
-        const dockerData = await dockerRes.json();
+        const dockerData = dockerRes.ok ? await dockerRes.json() : [];
 
-        // Historical metrics
-        const historicalRes = await fetch(`/api/servers/${currentServer.ip_address}/metrics`);
-        const historicalData = await historicalRes.json();
+        const historicalRes = await fetch(`/metrics/servers/${currentServer.ip_address}/metrics`);
+        const historicalData = historicalRes.ok ? await historicalRes.json() : [];
 
-        setMetrics(prev => ({
-          ...prev,
+        setMetrics({
           system: systemData,
           docker: dockerData,
           historical: historicalData,
-          alerts: [...checkThresholds(systemData), ...prev.alerts.slice(0, 4)],
-          isLoading: { system: false, docker: false }
-        }));
+          alerts: [],
+          isLoading: false
+        });
 
       } catch (error) {
-        console.error('Error fetching metrics:', error);
+        console.error("Error fetching metrics:", error);
       }
     };
 
-    fetchMetrics();
-    const interval = setInterval(fetchMetrics, 2000);
-    return () => clearInterval(interval);
+    fetchData();
+    const interval = setInterval(fetchData, 5000); // 🔄 Fetch every 5 seconds
+
+    return () => clearInterval(interval);  // ✅ Cleanup interval on unmount
   }, [currentServer]);
 
-  return { ...metrics, setMetrics };
+  return metrics;
 };
