@@ -52,17 +52,29 @@ def get_server_metrics(ip):
 def container_action(container_name, action):
     try:
         server_ip = request.args.get('server')
+        if not server_ip:
+            return jsonify({'error': 'Missing server IP'}), 400  # ✅ Ensure server IP is provided
+
+        # ✅ Connect to remote Docker API
         client = docker.DockerClient(base_url=f"tcp://{server_ip}:2375")
-        container = client.containers.get(container_name)
-        
+
+        container = client.containers.get(container_name)  # ✅ Ensure container exists
+
+        # ✅ Perform requested action
         if action == 'restart':
             container.restart()
         elif action == 'stop':
             container.stop()
         elif action == 'start':
             container.start()
-            
+        else:
+            return jsonify({'error': 'Invalid action'}), 400  # ✅ Handle invalid actions
+        
         return jsonify({'message': f'Container {action} successful'}), 200
+    except docker.errors.NotFound:
+        return jsonify({'error': 'Container not found'}), 404
+    except docker.errors.APIError as e:
+        return jsonify({'error': f'Docker API error: {str(e)}'}), 500
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 

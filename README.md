@@ -1,48 +1,45 @@
-# Project
+# Metricly - A server monitoring tool that provides real-time data on the performance of your servers
 
-## Metricly - A server monitoring tool that provides real-time data on the performance of your servers
+## Current
 
-### Current
-
-- look into the differences between database.py and config.py and see if they can be combined
 - adding ip's of server using nmap or manually having them entered in and stored in (file or database)
 - make sidebar with all added servers and then look into charts and stuff
-- display added servers in the sidebar and switch between them
-- mitigate docker container downtime by having option to restart container if it goes down
+- fix docker container buttons
 - beautify dashboard
 
 ### TODO
 
-#### Documentation
-
-- Write documentation
-
 #### Frontend
 
 - Sidebar with all added servers
-- add server can be a popup where the background gets blurred
-- Metrics displayed in real time and human readable
-- Whole frontend (dashboard, etc.) (will try to use Material UI and React)
 - Charts using mui
 - notifications for when a server goes down
+- Alerts and notifications for threshold breaches.
+- Historical metrics storage and retrieval for trend analysis.
 
 #### Backend
 
-- Add more metrics
 - Adding servers and getting their metrics over local network
-- Full database stuff (sqlite3)
 - Making Docker Compose file
 - implement notifications
-- adding ip's of local servers and having them display at the bottom of the sidebar
+- adding ip's of local servers and having them display at the bottom left of the sidebar instead of having it highlighted
+- network scanning with customizable IP ranges.
+- Authentication and authorization for server management.
 
 #### Miscellaneous
 
-- Testing
 - Update .env and requirements
-- Figure out what to do with package.json and package-lock.json
-- Real-time metrics streaming using WebSockets or Server-Sent Events (SSE).
-- Authentication and authorization for server management.
-- Historical metrics storage and retrieval for trend analysis.
-- Alerts and notifications for threshold breaches.
-- Improved network scanning with customizable IP ranges.
-- Error handling and logging for better debugging.
+- check package.json and package-lock.json
+- Future: Real-time metrics streaming using WebSockets or Server-Sent Events (SSE).
+
+#### Bugs
+
+- adding bogus servers still gives metrics
+- can't remove servers once I've used them once
+- fix docker container grabbing the 2nd port in dockercontainers.jsx
+- more testing
+- docker containers disappear once they've been stopped
+
+#### Documentation
+
+- Write documentation
