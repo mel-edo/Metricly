@@ -28,7 +28,7 @@ export const useServerMetrics = (currentServer) => {
         setMetrics({
           system: systemData,
           docker: dockerData,
-          historical: historicalData,
+          historical: Array.isArray(historicalData) ? historicalData : [],  // ✅ Ensure it's always an array
           alerts: [],
           isLoading: false
         });

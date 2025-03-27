@@ -16,7 +16,8 @@ export default function App() {
   const [currentServer, setCurrentServer] = useState(null);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [error, setError] = useState(null);
-  const [alerts, setAlerts] = useState([]);  // ✅ Added missing alerts state
+  const [alerts, setAlerts] = useState([]);
+  const [currentTab, setCurrentTab] = useState('dashboard');  // Add tab switching state
 
   const { system, docker, historical, isLoading } = useServerMetrics(currentServer);
 
@@ -34,39 +35,15 @@ export default function App() {
       });
   }, []);
 
-  const handleAddServer = (ip) => {
-    fetch('/metrics/servers', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ip_address: ip }),
-    })
-    .then(res => {
-      if (!res.ok) throw new Error('Failed to add server');
-      return fetch('/metrics/servers');
-    })
-    .then(res => res.json())
-    .then(data => setServers(data))
-    .catch(err => {
-      console.error('Error adding server:', err);
-      setError('Failed to add server. Try again.');
-    });
-  };
-
-  const handleRemoveServer = (ip) => {
-    fetch(`/metrics/servers/${ip}`, { method: 'DELETE' })
-    .then(res => res.json())
-    .then(data => {
-        console.log("Server removed:", data);
-        setServers(prevServers => prevServers.filter(server => server.ip_address !== ip));
-    })
-    .catch(err => console.error("Error removing server:", err));
-  };
-
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <Sidebar mobileOpen={mobileOpen} setMobileOpen={setMobileOpen}>
-        {error ? <p style={{ color: 'red' }}>{error}</p> : null}
+      <Sidebar 
+        mobileOpen={mobileOpen} 
+        setMobileOpen={setMobileOpen} 
+        setCurrentTab={setCurrentTab} 
+        currentServer={currentServer}
+      >
         {servers.length === 0 ? (
           <p>No servers available. Add a server or check API response.</p>
         ) : (
@@ -74,17 +51,31 @@ export default function App() {
             servers={servers} 
             currentServer={currentServer} 
             setCurrentServer={setCurrentServer} 
-            handleRemoveServer={handleRemoveServer}  // Pass handleRemoveServer as a prop
           />
         )}
       </Sidebar>
       <Container>
         <Box>
-          <ServerForm onAddServer={handleAddServer} />
-          <AlertsList alerts={alerts} />
-          <SystemMetrics system={system} isLoading={isLoading} />
-          <DockerContainers docker={docker} isLoading={isLoading} currentServer={currentServer} />
-          <SystemCharts data={historical} />
+          {/*Render Dashboard or Charts Based on Selected Tab */}
+          {currentTab === 'dashboard' ? (
+            <>
+              <ServerForm onAddServer={(ip) => {
+                fetch('/metrics/servers', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ ip_address: ip }),
+                })
+                .then(res => res.json())
+                .then(data => setServers(data))
+                .catch(err => console.error("Error adding server:", err));
+              }} />
+              <AlertsList alerts={alerts} />
+              <SystemMetrics system={system} isLoading={isLoading} />
+              <DockerContainers docker={docker} isLoading={isLoading} currentServer={currentServer} />
+            </>
+          ) : (
+            <SystemCharts data={historical} system={system} />
+          )}
         </Box>
       </Container>
     </ThemeProvider>
