@@ -1,48 +1,68 @@
 from datetime import datetime
 import psutil
+import requests
 from app.models.database import Metric, db
 
 def convert_bytes(num_bytes):
-    for unit in ['B', 'KB', 'MB', 'GB', 'TB']:
-        if num_bytes < 1024:
-            return f"{num_bytes:.2f} {unit}"
-        num_bytes /= 1024
+    """Convert bytes to human readable format."""
+    num_bytes = float(num_bytes)  # Convert to float for division
+    for unit in ['', 'K', 'M', 'G', 'T']:
+        if abs(num_bytes) < 1024.0:
+            return f"{num_bytes:.2f}"  # Return just the number
+        num_bytes /= 1024.0
+    return f"{num_bytes:.2f}"  # Return just the number
 
 def get_system_metrics(current_server_ip):
-    system_metrics = {
-        'cpu_percent': psutil.cpu_percent(interval=1),
-        'cpu_count': psutil.cpu_count(),
-        'memory_info': {
-            'total': convert_bytes(psutil.virtual_memory().total),
-            'available': convert_bytes(psutil.virtual_memory().available),
-            'percent': psutil.virtual_memory().percent,
-            'used': convert_bytes(psutil.virtual_memory().used),
-            'free': convert_bytes(psutil.virtual_memory().free)
-        },
-        'disk_usage': {
-            'total': convert_bytes(psutil.disk_usage('/').total),
-            'used': convert_bytes(psutil.disk_usage('/').used),
-            'free': convert_bytes(psutil.disk_usage('/').free),
-            'percent': psutil.disk_usage('/').percent
-        },
-        'network_stats': {
-            'bytes_sent': convert_bytes(psutil.net_io_counters().bytes_sent),
-            'bytes_recv': convert_bytes(psutil.net_io_counters().bytes_recv),
-            'packets_sent': psutil.net_io_counters().packets_sent,
-            'packets_recv': psutil.net_io_counters().packets_recv
-        },
-        'process_count': len(psutil.pids()),  # ✅ Number of running processes
-        'uptime': datetime.now().timestamp() - psutil.boot_time()  # ✅ System uptime
-    }
+    try:
+        # If it's localhost, use psutil directly
+        if current_server_ip == "127.0.0.1":
+            system_metrics = {
+                'cpu_percent': psutil.cpu_percent(interval=1),
+                'cpu_count': psutil.cpu_count(),
+                'memory_info': {
+                    'total': float(psutil.virtual_memory().total),
+                    'available': float(psutil.virtual_memory().available),
+                    'percent': psutil.virtual_memory().percent,
+                    'used': float(psutil.virtual_memory().used),
+                    'free': float(psutil.virtual_memory().free)
+                },
+                'disk_usage': {}
+            }
 
-    new_metric = Metric(
-        metric_name='system',
-        metric_value=system_metrics['cpu_percent'],
-        timestamp=datetime.now(),
-        server_ip=current_server_ip
-    )
+            # Get all disk partitions
+            for partition in psutil.disk_partitions():
+                try:
+                    usage = psutil.disk_usage(partition.mountpoint)
+                    system_metrics['disk_usage'][partition.mountpoint] = {
+                        'total': float(usage.total),
+                        'used': float(usage.used),
+                        'free': float(usage.free),
+                        'percent': usage.percent
+                    }
+                except Exception as e:
+                    print(f"Error getting disk usage for {partition.mountpoint}: {e}")
+                    continue
+        else:
+            # For remote servers, fetch metrics from their API
+            response = requests.get(f"http://{current_server_ip}:5000/api/system", timeout=5)
+            if not response.ok:
+                raise Exception(f"Failed to fetch metrics from remote server: {response.status_text}")
+            system_metrics = response.json()
 
-    db.session.add(new_metric)
-    db.session.commit()
+        # Store metric in database
+        new_metric = Metric(
+            metric_name='system',
+            metric_value=system_metrics['cpu_percent'],
+            memory_info=system_metrics['memory_info'],
+            disk_usage=system_metrics['disk_usage'],
+            timestamp=datetime.now(),
+            server_ip=current_server_ip
+        )
 
-    return system_metrics
+        db.session.add(new_metric)
+        db.session.commit()
+
+        return system_metrics
+    except Exception as e:
+        print(f"Error collecting system metrics: {str(e)}")
+        raise
