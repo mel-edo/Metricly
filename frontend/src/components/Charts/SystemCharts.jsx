@@ -10,32 +10,42 @@ export const SystemCharts = ({ historical = [], system }) => {
 
   return (
     <Grid container spacing={3} sx={{ mb: 3 }}>
-      <Grid item xs={12} md={6}>
+      <Grid item xs={12}>
         <Card>
           <CardContent>
-            <Typography variant="h5" gutterBottom>CPU Usage History</Typography>
+            <Typography variant="h5" gutterBottom>System Metrics History</Typography>
             {historical.length > 0 ? (
               <LineChart
-                xAxis={[{ data: historical.map((_, i) => i) }]}
-                series={[{ data: historical.map(m => parseFloat(m.cpu_percent || 0)) }]}
-                height={300}
+                xAxis={[{ 
+                  data: historical.map((_, i) => i),
+                  scaleType: 'linear'
+                }]}
+                series={[
+                  { 
+                    data: historical.map(m => parseFloat(m.cpu_percent || 0)),
+                    label: 'CPU %',
+                    color: '#8884d8'
+                  },
+                  { 
+                    data: historical.map(m => parseFloat(m.memory_percent || 0)),
+                    label: 'Memory %',
+                    color: '#82ca9d'
+                  },
+                  { 
+                    data: historical.map(m => parseFloat(m.disk_percent || 0)),
+                    label: 'Disk %',
+                    color: '#ffc658'
+                  }
+                ]}
+                height={400}
+                slotProps={{
+                  legend: {
+                    hidden: false,
+                    position: 'bottom'
+                  }
+                }}
               />
-            ) : <Skeleton variant="rectangular" height={300} />}
-          </CardContent>
-        </Card>
-      </Grid>
-
-      <Grid item xs={12} md={6}>
-        <Card>
-          <CardContent>
-            <Typography variant="h5" gutterBottom>Memory Usage</Typography>
-            {historical.length > 0 ? (
-              <LineChart
-                xAxis={[{ data: historical.map((_, i) => i) }]}
-                series={[{ data: historical.map(m => parseFloat(m.memory_info?.percent || 0)) }]}
-                height={300}
-              />
-            ) : <Skeleton variant="rectangular" height={300} />}
+            ) : <Skeleton variant="rectangular" height={400} />}
           </CardContent>
         </Card>
       </Grid>

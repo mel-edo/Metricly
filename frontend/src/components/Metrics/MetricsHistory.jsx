@@ -21,7 +21,8 @@ import {
   Select,
   MenuItem,
   Tab,
-  Tabs
+  Tabs,
+  LinearProgress
 } from '@mui/material';
 import {
   LineChart,
@@ -111,7 +112,18 @@ export const MetricsHistory = ({ server, metrics }) => {
       }
 
       const systemData = await systemResponse.json();
-      setHistoricalData(systemData);
+      console.log('Received historical data:', systemData);
+
+      // Format the data to ensure all required metrics are present
+      const formattedData = systemData.map(point => ({
+        timestamp: point.timestamp,
+        cpu_percent: parseFloat(point.cpu_percent || 0),
+        memory_percent: parseFloat(point.memory_info?.percent || 0),
+        disk_percent: parseFloat(point.disk_usage?.['/']?.percent || 0)
+      }));
+
+      console.log('Formatted historical data:', formattedData);
+      setHistoricalData(formattedData);
 
       // Fetch Docker metrics history
       const dockerResponse = await fetch(
@@ -128,6 +140,7 @@ export const MetricsHistory = ({ server, metrics }) => {
       }
 
       const dockerData = await dockerResponse.json();
+      console.log('Received Docker data:', dockerData);
       setDockerHistoricalData(dockerData);
     } catch (error) {
       console.error('Error fetching historical data:', error);
@@ -341,36 +354,123 @@ export const MetricsHistory = ({ server, metrics }) => {
         <Card sx={{ height: '100%' }}>
           <CardContent>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-              <Typography variant="h5">Docker Metrics History</Typography>
+              <Typography variant="h5">Container Health Overview</Typography>
             </Box>
 
-            <Box sx={{ height: 400 }}>
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={prepareDockerData()}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis
-                    dataKey="timestamp"
-                    tickFormatter={(value) => new Date(value).toLocaleTimeString()}
-                  />
-                  <YAxis domain={[0, 100]} />
-                  <ChartTooltip
-                    labelFormatter={(value) => new Date(value).toLocaleString()}
-                  />
-                  <Legend />
-                  {Object.entries(dockerHistoricalData).map(([containerName]) => (
-                    <Line
-                      key={`${containerName}_cpu`}
-                      type="monotone"
-                      dataKey={`${containerName}_cpu`}
-                      stroke={containerColors[containerName] || getRandomColor()}
-                      name={`${containerName} CPU %`}
-                      strokeWidth={2}
-                      dot={false}
-                    />
-                  ))}
-                </LineChart>
-              </ResponsiveContainer>
-            </Box>
+            {dockerHistoricalData && Object.keys(dockerHistoricalData).length > 0 ? (
+              <Box>
+                {Object.entries(dockerHistoricalData).map(([containerName, data]) => {
+                  const latestData = data[data.length - 1];
+                  if (!latestData) return null;
+
+                  const cpuUsage = parseFloat(latestData.cpu_percent || 0);
+                  const memoryUsage = parseFloat(latestData.memory_used || 0);
+                  const memoryLimit = parseFloat(latestData.memory_limit || 0);
+                  const memoryPercentage = memoryLimit > 0 ? (memoryUsage / memoryLimit) * 100 : 0;
+
+                  // Get container health information
+                  const isRunning = latestData.is_running || false;
+                  const restartCount = latestData.restart_count || 0;
+                  const exitCode = latestData.exit_code || 0;
+
+                  // Determine container health
+                  const isHealthy = () => {
+                    // Check resource usage
+                    const hasHighCpu = cpuUsage > thresholds.cpu;
+                    const hasHighMemory = memoryPercentage > thresholds.memory;
+                    
+                    // Check container status
+                    const hasTooManyRestarts = restartCount > 3;
+                    const hasErrorExitCode = exitCode !== 0;
+                    
+                    return !hasHighCpu && !hasHighMemory && isRunning && !hasTooManyRestarts && !hasErrorExitCode;
+                  };
+
+                  const getHealthStatus = () => {
+                    if (!isRunning) return { label: 'Stopped', color: 'error' };
+                    if (exitCode !== 0) return { label: 'Error', color: 'error' };
+                    if (restartCount > 3) return { label: 'Unstable', color: 'warning' };
+                    if (cpuUsage > thresholds.cpu) return { label: 'High CPU', color: 'error' };
+                    if (memoryPercentage > thresholds.memory) return { label: 'High Memory', color: 'error' };
+                    return { label: 'Healthy', color: 'success' };
+                  };
+
+                  const healthStatus = getHealthStatus();
+
+                  return (
+                    <Box 
+                      key={containerName} 
+                      sx={{ 
+                        mb: 2,
+                        p: 2,
+                        borderRadius: 1,
+                        bgcolor: 'background.paper',
+                        boxShadow: 1
+                      }}
+                    >
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+                        <Typography variant="subtitle1" sx={{ fontWeight: 'medium' }}>
+                          {containerName}
+                        </Typography>
+                        <Box sx={{ display: 'flex', gap: 1 }}>
+                          <Chip 
+                            label={healthStatus.label}
+                            size="small" 
+                            color={healthStatus.color}
+                            variant="outlined"
+                          />
+                        </Box>
+                      </Box>
+                      
+                      <Grid container spacing={2}>
+                        <Grid item xs={6}>
+                          <Box>
+                            <Typography variant="caption" color="text.secondary">
+                              CPU Usage
+                            </Typography>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                              <Box sx={{ flexGrow: 1 }}>
+                                <LinearProgress 
+                                  variant="determinate" 
+                                  value={cpuUsage} 
+                                  color={cpuUsage > thresholds.cpu ? 'error' : 'primary'}
+                                  sx={{ height: 8, borderRadius: 4 }}
+                                />
+                              </Box>
+                              <Typography variant="body2" color="text.secondary">
+                                {cpuUsage.toFixed(1)}%
+                              </Typography>
+                            </Box>
+                          </Box>
+                        </Grid>
+                        <Grid item xs={6}>
+                          <Box>
+                            <Typography variant="caption" color="text.secondary">
+                              Memory Usage
+                            </Typography>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                              <Box sx={{ flexGrow: 1 }}>
+                                <LinearProgress 
+                                  variant="determinate" 
+                                  value={memoryPercentage} 
+                                  color={memoryPercentage > thresholds.memory ? 'error' : 'primary'}
+                                  sx={{ height: 8, borderRadius: 4 }}
+                                />
+                              </Box>
+                              <Typography variant="body2" color="text.secondary">
+                                {memoryUsage.toFixed(1)}MB / {memoryLimit.toFixed(1)}MB
+                              </Typography>
+                            </Box>
+                          </Box>
+                        </Grid>
+                      </Grid>
+                    </Box>
+                  );
+                })}
+              </Box>
+            ) : (
+              <Typography color="text.secondary">No containers available.</Typography>
+            )}
           </CardContent>
         </Card>
       </Grid>

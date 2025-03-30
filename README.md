@@ -1,78 +1,105 @@
-# Metricly - Server Monitoring Dashboard
+# Metricly - Docker & System Monitoring Dashboard
 
-A modern, responsive web application for monitoring server metrics and Docker containers in real-time.
+Metricly is a modern, real-time monitoring dashboard for Docker containers and system resources. It provides a clean, intuitive interface for monitoring your servers and containers with advanced metrics visualization and alerting capabilities.
 
 ## Features
 
-### Implemented
+### System Monitoring
 
-- User Authentication
-  - Login/Register functionality
-  - JWT-based authentication
-  - Token expiration handling
-  - Secure password storage
-- Server Management
-  - Add/Remove servers
-  - Server connection status indicators
-  - Server health monitoring
-- Real-time Metrics
-  - CPU usage monitoring
-  - Memory usage tracking
-  - Disk usage statistics
-  - Docker container metrics
-- Docker Container Management
-  - Container status monitoring
-  - Start/Stop/Restart containers
-  - Container logs viewing
-  - Container resource usage tracking
-- UI/UX
-  - Dark/Light mode support
-  - Responsive design
-  - Interactive charts
-  - Real-time updates
-  - Loading states
-  - Error handling
-- Alert System
-  - Custom thresholds for metrics
-  - Visual alert indicators
-  - Alert history
+- Real-time CPU, Memory, and Disk usage tracking
+- Historical data visualization with customizable time ranges
+- Interactive line charts for resource usage trends
+- Customizable alert thresholds for system resources
+- Support for multiple servers (including remote monitoring)
 
-### Planned Features 🚀
+### Container Management
 
-- Advanced Monitoring
-  - Network traffic monitoring
-  - Process monitoring
-  - Custom metric collection
-  - Historical data analysis
-- Enhanced Docker Features
-  - Container health checks
-  - Container resource limits
-  - Container networking management
-  - Container volume management
-- Alert System Enhancements
-  - Email notifications
-  - Slack integration
-  - Custom alert rules
-  - Alert scheduling
-- User Management
-  - User roles and permissions
-  - Team management
-  - Server access control
-  - Activity logging
-- Dashboard Customization
-  - Custom dashboard layouts
-  - Widget configuration
-  - Custom metric displays
-  - Saved views
+- Comprehensive container health monitoring
+- Real-time container metrics (CPU, Memory usage)
+- Container status tracking (Running, Stopped, Error states)
+- Health indicators based on multiple factors:
+  - Resource usage
+  - Container status
+  - Restart count
+  - Exit codes
+- Visual progress bars for resource utilization
 
-### Todo
+### User Interface
 
-- Write documentation
-- being able to make own color scheme (partially implemented)
+- Modern, responsive Material-UI design
+- Dark/Light theme support
+- Real-time data updates
+- Interactive charts and graphs
+- Customizable dashboard layout
+- Mobile-friendly interface
 
-### Bugs
+### Security
 
-- not being able to remove servers
-- memory usage and disk usage not being updated and shown
-- cpu usage not being updated dynamically
-- make add new server look nicer
+- JWT-based authentication
+- Role-based access control
+- Secure password management
+- Rate limiting for API endpoints
+- Protected API routes
+
+### Alerting System
+
+- Configurable alert thresholds
+- Visual alerts for resource usage
+- Container health status indicators
+- Color-coded status chips
+- Real-time alert updates
+
+## Planned Features
+
+### Advanced Analytics
+
+- Predictive resource usage analysis
+- Anomaly detection using AI/ML
+- Performance trend forecasting
+- Resource optimization recommendations
+- Automated scaling suggestions
+
+### Docker Integration
+
+- Docker Compose support
+- Container orchestration features
+- Multi-cluster management
+- Container networking visualization
+- Automated container health checks
+
+### Testing & Deployment
+
+- Multi-server testing environment
+- Load testing capabilities
+- Performance benchmarking
+- Automated deployment pipelines
+- Container image vulnerability scanning
+
+### Additional Features
+
+- Advanced log analysis and filtering
+- Automated backup and restore
+- Custom alert rules and notifications
+- API for external integrations
+
+## Technical Stack
+
+- Frontend: React + Vite
+- UI Framework: Material-UI
+- Backend: Flask
+- Database: SQLite
+- Authentication: JWT
+- Charts: Recharts
+- Container Management: Docker SDK
+
+## Getting Started
+
+[Installation and setup instructions to be added]
+
+## Contributing
+
+[Contribution guidelines to be added]
+
+## License
+
+See [LICENSE](../LICENSE) file for details.

@@ -49,10 +49,19 @@ def get_system_metrics(current_server_ip):
                 raise Exception(f"Failed to fetch metrics from remote server: {response.status_text}")
             system_metrics = response.json()
 
+        # Get root partition disk usage percentage
+        root_disk_percent = next(
+            (usage['percent'] for mount, usage in system_metrics['disk_usage'].items() if mount == '/'),
+            system_metrics['disk_usage'].get(list(system_metrics['disk_usage'].keys())[0], {}).get('percent', 0)
+            if system_metrics['disk_usage'] else 0
+        )
+
         # Store metric in database
         new_metric = Metric(
             metric_name='system',
             metric_value=system_metrics['cpu_percent'],
+            memory_percent=system_metrics['memory_info']['percent'],
+            disk_percent=root_disk_percent,
             memory_info=system_metrics['memory_info'],
             disk_usage=system_metrics['disk_usage'],
             timestamp=datetime.now(),

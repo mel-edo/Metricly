@@ -31,7 +31,7 @@ def token_required(f):
 
         try:
             data = jwt.decode(token.split("Bearer ")[-1], SECRET_KEY, algorithms=["HS256"])
-            current_user = User.query.filter_by(email=data["email"]).first()
+            current_user = User.query.filter_by(username=data["username"]).first()
             if not current_user:
                 return jsonify({"error": "User not found"}), 401
         except jwt.ExpiredSignatureError:
@@ -48,14 +48,14 @@ def token_required(f):
 @limiter.limit("5 per minute")
 def register():
     data = request.get_json()
-    if not data or "email" not in data or "password" not in data:
-        return jsonify({"error": "Missing email or password"}), 400
+    if not data or "username" not in data or "password" not in data:
+        return jsonify({"error": "Missing username or password"}), 400
 
-    if User.query.filter_by(email=data["email"]).first():
-        return jsonify({"error": "Email already registered"}), 400
+    if User.query.filter_by(username=data["username"]).first():
+        return jsonify({"error": "Username already registered"}), 400
 
     try:
-        user = User(email=data["email"])
+        user = User(username=data["username"])
         user.set_password(data["password"])
         db.session.add(user)
         db.session.commit()
@@ -69,14 +69,15 @@ def register():
 @limiter.limit("5 per minute")
 def login():
     data = request.get_json()
-    print(f"Login attempt received for email: {data.get('email')}")  # Debug log
+    print(f"Login attempt received for username: {data.get('username')}")  # Debug log
     
-    if not data or "email" not in data or "password" not in data:
-        print("Missing email or password")  # Debug log
-        return jsonify({"error": "Missing email or password"}), 400
+    if not data or "username" not in data or "password" not in data:
+        print("Missing username or password")  # Debug log
+        return jsonify({"error": "Missing username or password"}), 400
 
     try:
-        user = User.query.filter_by(email=data["email"]).first()
+        print("Attempting to query user from database...")  # Debug log
+        user = User.query.filter_by(username=data["username"]).first()
         print(f"User found: {user is not None}")  # Debug log
         print(f"User details: {user.__dict__ if user else None}")  # Debug log
         
@@ -88,7 +89,7 @@ def login():
         if user and password_check:
             token = jwt.encode(
                 {
-                    "email": user.email,
+                    "username": user.username,
                     "exp": datetime.utcnow() + timedelta(hours=TOKEN_EXPIRATION)
                 },
                 SECRET_KEY,
@@ -212,8 +213,8 @@ def get_server_metrics(ip):
                 latest_data = {
                     'timestamp': datetime.utcnow().isoformat(),
                     'cpu_percent': float(latest_metrics.get('cpu_percent', 0)),
-                    'memory_percent': float(latest_metrics.get('memory_info', {}).get('percent', 0)),
-                    'disk_percent': float(latest_metrics.get('disk_usage', {}).get('/', {}).get('percent', 0))
+                    'memory_info': latest_metrics.get('memory_info', {}),
+                    'disk_usage': latest_metrics.get('disk_usage', {})
                 }
                 formatted_metrics.append(latest_data)
         except Exception as e:
@@ -225,8 +226,8 @@ def get_server_metrics(ip):
                 metric_data = {
                     'timestamp': metric.timestamp.isoformat(),
                     'cpu_percent': float(metric.metric_value or 0),
-                    'memory_percent': float(metric.memory_info.get('percent', 0) if metric.memory_info else 0),
-                    'disk_percent': float(metric.disk_usage.get('/', {}).get('percent', 0) if metric.disk_usage else 0)
+                    'memory_info': metric.memory_info or {},
+                    'disk_usage': metric.disk_usage or {}
                 }
                 formatted_metrics.append(metric_data)
             except (ValueError, TypeError, AttributeError) as e:
@@ -245,12 +246,15 @@ def container_action(container_name, action):
     try:
         server_ip = request.args.get('server')
         if not server_ip:
-            return jsonify({'error': 'Missing server IP'}), 400  # ✅ Ensure server IP is provided
+            return jsonify({'error': 'Missing server IP'}), 400
 
-        # ✅ Connect to remote Docker API
-        client = docker.DockerClient(base_url=f"tcp://{server_ip}:2375")
+        # Use socket file for localhost, TCP for remote servers
+        if server_ip == "127.0.0.1":
+            client = docker.from_env()
+        else:
+            client = docker.DockerClient(base_url=f"tcp://{server_ip}:2375")
 
-        container = client.containers.get(container_name)  # ✅ Ensure container exists
+        container = client.containers.get(container_name)
 
         # ✅ Perform requested action
         if action == 'restart':
@@ -260,7 +264,7 @@ def container_action(container_name, action):
         elif action == 'start':
             container.start()
         else:
-            return jsonify({'error': 'Invalid action'}), 400  # ✅ Handle invalid actions
+            return jsonify({'error': 'Invalid action'}), 400
         
         return jsonify({'message': f'Container {action} successful'}), 200
     except docker.errors.NotFound:
@@ -332,8 +336,12 @@ def get_container_logs(container_name):
         if not server_ip:
             return jsonify({'error': 'Missing server IP'}), 400
 
-        # Connect to remote Docker API
-        client = docker.DockerClient(base_url=f"tcp://{server_ip}:2375")
+        # Use socket file for localhost, TCP for remote servers
+        if server_ip == "127.0.0.1":
+            client = docker.from_env()
+        else:
+            client = docker.DockerClient(base_url=f"tcp://{server_ip}:2375")
+            
         container = client.containers.get(container_name)
         
         # Get container logs
@@ -383,31 +391,160 @@ def server_thresholds(ip):
 
 @api_bp.route('/servers/<ip>/docker/metrics', methods=['GET'])
 def get_docker_metrics_history(ip):
-    time_range = request.args.get('timeRange', '1h')
-    
-    # Convert time range to seconds
-    range_map = {
-        '1h': 3600,
-        '24h': 86400,
-        '7d': 604800
-    }
-    seconds = range_map.get(time_range, 3600)
-    
-    # Get metrics from database for each container
-    metrics = {}
-    containers = get_docker_metrics()
-    
-    for container in containers:
-        container_metrics = Metric.query.filter(
-            Metric.metric_name == f"docker_{container['name']}",
-            Metric.server_ip == ip,
-            Metric.timestamp >= datetime.now() - timedelta(seconds=seconds)
-        ).order_by(Metric.timestamp.asc()).all()
+    try:
+        print(f"Fetching Docker metrics history for server {ip}")
+        time_range = request.args.get('timeRange', '1h')
+        print(f"Time range: {time_range}")
         
-        metrics[container['name']] = [{
-            'timestamp': m.timestamp,
-            'cpu_percent': float(m.metric_value),
-            'memory_percent': float(m.memory_percent) if m.memory_percent else 0
-        } for m in container_metrics]
+        # Convert time range to seconds
+        range_map = {
+            '1h': 3600,
+            '24h': 86400,
+            '7d': 604800
+        }
+        seconds = range_map.get(time_range, 3600)
+        
+        # Get metrics from database for each container
+        metrics = {}
+        try:
+            containers = get_docker_metrics()
+            print(f"Found {len(containers)} containers")
+        except Exception as e:
+            print(f"Error getting Docker containers: {e}")
+            containers = []
+        
+        for container in containers:
+            try:
+                container_name = container.get('name')
+                print(f"\nProcessing container: {container_name}")
+                
+                container_metrics = Metric.query.filter(
+                    Metric.metric_name == f"docker_{container_name}",
+                    Metric.server_ip == ip,
+                    Metric.timestamp >= datetime.now() - timedelta(seconds=seconds)
+                ).order_by(Metric.timestamp.asc()).all()
+                
+                print(f"Found {len(container_metrics)} historical metrics for {container_name}")
+                
+                # Parse memory usage and limit
+                memory_usage = container.get('memory_usage', '0 MB')
+                memory_limit = container.get('memory_limit', '0 MB')
+                print(f"Current memory usage: {memory_usage}, limit: {memory_limit}")
+                
+                # Convert memory strings to MB
+                def parse_memory(mem_str):
+                    try:
+                        if not mem_str or mem_str == '0 MB':
+                            return 0
+                        parts = mem_str.split(' ')
+                        if len(parts) != 2:
+                            print(f"Invalid memory string format: {mem_str}")
+                            return 0
+                        value = float(parts[0])
+                        unit = parts[1].upper()
+                        if unit == 'B':
+                            return value / (1024 * 1024)
+                        elif unit == 'KB':
+                            return value / 1024
+                        elif unit == 'GB':
+                            return value * 1024
+                        elif unit == 'TB':
+                            return value * 1024 * 1024
+                        return value  # Already in MB
+                    except Exception as e:
+                        print(f"Error parsing memory string {mem_str}: {e}")
+                        return 0
+                
+                memory_used_mb = parse_memory(memory_usage)
+                memory_limit_mb = parse_memory(memory_limit)
+                print(f"Parsed memory - used: {memory_used_mb}MB, limit: {memory_limit_mb}MB")
+                
+                # Get container status and health information
+                container_status = container.get('status', 'unknown')
+                is_running = container_status == 'running'
+                restart_count = container.get('restart_count', 0)
+                exit_code = container.get('exit_code', 0)
+                
+                # Add current metrics to the list
+                current_metrics = {
+                    'timestamp': datetime.now().isoformat(),
+                    'cpu_percent': float(container.get('cpu_percent', 0)),
+                    'memory_used': memory_used_mb,
+                    'memory_limit': memory_limit_mb,
+                    'status': container_status,
+                    'is_running': is_running,
+                    'restart_count': restart_count,
+                    'exit_code': exit_code
+                }
+                print(f"Current metrics for {container_name}:", current_metrics)
+                
+                # Add historical metrics
+                historical_metrics = [{
+                    'timestamp': m.timestamp.isoformat(),
+                    'cpu_percent': float(m.metric_value or 0),
+                    'memory_used': float(m.memory_percent or 0),
+                    'memory_limit': memory_limit_mb,  # Use current limit for historical data
+                    'status': container_status,
+                    'is_running': is_running,
+                    'restart_count': restart_count,
+                    'exit_code': exit_code
+                } for m in container_metrics]
+                
+                metrics[container_name] = historical_metrics + [current_metrics]
+                
+                # Store current metrics in database
+                new_metric = Metric(
+                    metric_name=f"docker_{container_name}",
+                    metric_value=float(container.get('cpu_percent', 0)),
+                    memory_percent=memory_used_mb,  # Store as MB
+                    timestamp=datetime.now(),
+                    server_ip=ip
+                )
+                db.session.add(new_metric)
+                print(f"Added new metric for {container_name} to database")
+            except Exception as e:
+                print(f"Error processing container {container.get('name', 'unknown')}: {e}")
+                continue
+        
+        try:
+            db.session.commit()
+            print("Successfully committed metrics to database")
+        except Exception as e:
+            db.session.rollback()
+            print(f"Error storing Docker metrics: {e}")
+        
+        print(f"Returning metrics for {len(metrics)} containers")
+        return jsonify(metrics)
+    except Exception as e:
+        print(f"Error in get_docker_metrics_history: {e}")
+        return jsonify({"error": str(e)}), 500
+
+@api_bp.route('/change-password', methods=['POST'])
+@token_required
+def change_password():
+    data = request.get_json()
     
-    return jsonify(metrics)
+    if not data or 'old_password' not in data or 'new_password' not in data:
+        return jsonify({"error": "Missing old or new password"}), 400
+
+    try:
+        # Get current user from token
+        token = request.headers.get("Authorization").split("Bearer ")[-1]
+        user_data = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
+        current_user = User.query.filter_by(username=user_data["username"]).first()
+
+        if not current_user:
+            return jsonify({"error": "User not found"}), 404
+
+        # Verify old password
+        if not current_user.check_password(data['old_password']):
+            return jsonify({"error": "Current password is incorrect"}), 401
+
+        # Set new password
+        current_user.set_password(data['new_password'])
+        db.session.commit()
+
+        return jsonify({"message": "Password updated successfully"})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": str(e)}), 500

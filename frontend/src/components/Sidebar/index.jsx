@@ -22,13 +22,14 @@ import {
   Add as AddIcon,
   Delete as DeleteIcon,
   Logout as LogoutIcon,
-  Person as PersonIcon,
+  Settings as SettingsIcon,
   Palette as PaletteIcon,
   Menu as MenuIcon,
 } from '@mui/icons-material';
 import { ServerForm } from '../ServerManagement/ServerForm';
 import { ThemeCustomizer } from '../ThemeCustomizer';
 import { ServerList } from './ServerList';
+import { ChangePasswordDialog } from '../Auth/ChangePasswordDialog';
 
 const DRAWER_WIDTH = 240;
 
@@ -38,6 +39,7 @@ export const Sidebar = ({ servers, currentServer, onServerSelect, onServerRemove
   const [mobileOpen, setMobileOpen] = useState(false);
   const [showServerForm, setShowServerForm] = useState(false);
   const [showThemeCustomizer, setShowThemeCustomizer] = useState(false);
+  const [showPasswordDialog, setShowPasswordDialog] = useState(false);
   const [anchorEl, setAnchorEl] = useState(null);
 
   const handleDrawerToggle = () => {
@@ -57,6 +59,11 @@ export const Sidebar = ({ servers, currentServer, onServerSelect, onServerRemove
     window.location.href = '/login';
   };
 
+  const handleSettings = () => {
+    handleMenuClose();
+    setShowPasswordDialog(true);
+  };
+
   const drawer = (
     <Box sx={{ width: DRAWER_WIDTH }}>
       <Box sx={{ p: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -64,7 +71,7 @@ export const Sidebar = ({ servers, currentServer, onServerSelect, onServerRemove
           Metricly
         </Typography>
         <IconButton onClick={handleMenuOpen} size="small">
-          <PersonIcon />
+          <SettingsIcon />
         </IconButton>
       </Box>
       <Divider />
@@ -207,8 +214,7 @@ export const Sidebar = ({ servers, currentServer, onServerSelect, onServerRemove
         open={Boolean(anchorEl)}
         onClose={handleMenuClose}
       >
-        <MenuItem onClick={handleMenuClose}>Profile</MenuItem>
-        <MenuItem onClick={handleMenuClose}>Settings</MenuItem>
+        <MenuItem onClick={handleSettings}>Change Password</MenuItem>
       </Menu>
 
       {showServerForm && (
@@ -224,6 +230,11 @@ export const Sidebar = ({ servers, currentServer, onServerSelect, onServerRemove
           onClose={() => setShowThemeCustomizer(false)}
         />
       )}
+
+      <ChangePasswordDialog
+        open={showPasswordDialog}
+        onClose={() => setShowPasswordDialog(false)}
+      />
     </>
   );
 };

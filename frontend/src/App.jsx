@@ -6,7 +6,6 @@ import { SystemMetrics } from "./components/Metrics/SystemMetrics";
 import { DockerContainers } from "./components/Metrics/DockerContainers";
 import { MetricsHistory } from "./components/Metrics/MetricsHistory";
 import Login from "./pages/login";
-import Register from "./pages/register";
 import { ThemeProvider, useTheme } from "./theme/index.jsx";
 import Brightness4Icon from '@mui/icons-material/Brightness4';
 import Brightness7Icon from '@mui/icons-material/Brightness7';
@@ -319,19 +318,6 @@ const AppContent = () => {
                 element={
                   !isAuthenticated ? (
                     <Login onLoginSuccess={fetchServers} />
-                  ) : (
-                    <Navigate to="/" />
-                  )
-                }
-              />
-              <Route
-                path="/register"
-                element={
-                  !isAuthenticated ? (
-                    <Register onRegisterSuccess={() => {
-                      // After successful registration, redirect to login
-                      navigate("/login");
-                    }} />
                   ) : (
                     <Navigate to="/" />
                   )

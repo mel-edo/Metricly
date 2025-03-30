@@ -1,27 +1,32 @@
 import React, { useState } from "react";
-import { TextField, Button, Container, Typography, Box, CircularProgress, Alert, Link, Paper } from "@mui/material";
+import { TextField, Button, Container, Typography, Box, CircularProgress, Alert, Link, Paper, IconButton, InputAdornment } from "@mui/material";
+import { Visibility, VisibilityOff } from '@mui/icons-material';
 import { useNavigate } from "react-router-dom";
 
 const Login = ({ onLoginSuccess }) => {
-  const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
 
   const handleLogin = async () => {
     setLoading(true);
     setError(null);
     try {
+      console.log('Attempting login with username:', username);
       const response = await fetch("/api/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ username, password }),
       });
       
       const data = await response.json();
+      console.log('Login response:', data);
 
       if (!response.ok) {
+        console.error('Login failed:', data.error);
         throw new Error(data.error || "Login failed");
       }
 
@@ -31,8 +36,9 @@ const Login = ({ onLoginSuccess }) => {
     } catch (err) {
       console.error("Login error:", err);
       setError(err.message);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   return (
@@ -95,42 +101,57 @@ const Login = ({ onLoginSuccess }) => {
         
         {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
         
-        <Box component="form" onSubmit={(e) => { e.preventDefault(); handleLogin(); }}>
+        <Box 
+          component="form" 
+          onSubmit={(e) => { 
+            e.preventDefault(); 
+            handleLogin(); 
+          }}
+          noValidate
+        >
           <TextField
-            label="Email"
-            type="email"
+            label="Username"
             fullWidth
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            autoComplete="email"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            autoComplete="username"
             required
             sx={{ mb: 2 }}
           />
           <TextField
             label="Password"
-            type="password"
+            type={showPassword ? "text" : "password"}
             fullWidth
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             autoComplete="current-password"
             required
             sx={{ mb: 3 }}
+            InputProps={{
+              endAdornment: (
+                <InputAdornment position="end">
+                  <IconButton
+                    onMouseDown={() => setShowPassword(true)}
+                    onMouseUp={() => setShowPassword(false)}
+                    onMouseLeave={() => setShowPassword(false)}
+                    edge="end"
+                  >
+                    {showPassword ? <Visibility /> : <VisibilityOff />}
+                  </IconButton>
+                </InputAdornment>
+              ),
+            }}
           />
           <Button
+            type="submit"
             variant="contained"
             color="primary"
             fullWidth
-            onClick={handleLogin}
             disabled={loading}
             sx={{ mb: 2 }}
           >
-            {loading ? <CircularProgress size={24} /> : "Sign In"}
+            {loading ? <CircularProgress size={24} /> : "Login"}
           </Button>
-          <Box textAlign="center">
-            <Link href="/register" underline="hover" sx={{ color: "primary.main" }}>
-              Don't have an account? Register
-            </Link>
-          </Box>
         </Box>
       </Paper>
     </Box>

@@ -42,7 +42,8 @@ def get_docker_metrics():
                     'tx_bytes': convert_bytes(stats.get('networks', {}).get('eth0', {}).get('tx_bytes', 0))
                 },
                 'ports': formatted_ports,  # ✅ Store formatted ports
-                'size': convert_bytes(size),  # ✅ Default to 0 if missing
+                'size': convert_bytes(container.attrs.get('SizeRootFs', 0)),
+                'created': container.attrs.get('Created', ''),
                 'image': container.image.tags[0] if container.image.tags else "Unknown"
             }
             container_metrics.append(metrics)
