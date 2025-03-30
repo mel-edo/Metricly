@@ -52,11 +52,13 @@ export const DockerContainers = ({ docker = [], isLoading, currentServer }) => {
 
   useEffect(() => {
     setContainers(docker);
+    console.log('Received Docker data:', docker);
   }, [docker]);
 
   useEffect(() => {
     // Update resource history for each container
     containers.forEach(container => {
+      console.log('Container volumes:', container.name, container.volumes);
       // Convert memory usage from string (e.g., "1.2 MB") to number
       const memoryValue = parseFloat(container.memory_usage.split(' ')[0]);
       const memoryUnit = container.memory_usage.split(' ')[1];
@@ -204,6 +206,14 @@ export const DockerContainers = ({ docker = [], isLoading, currentServer }) => {
     return `${(bytes / Math.pow(k, i)).toFixed(2)} ${sizes[i]}`;
   };
 
+  const handleContainerDetails = (container) => {
+    console.log('Opening details for container:', container.name);
+    console.log('Container volumes:', container.volumes);
+    console.log('Container uptime:', container.uptime);
+    setSelectedContainer(container);
+    setShowDetails(true);
+  };
+
   if (isLoading) {
     return (
       <Card sx={{ mb: 3 }}>
@@ -235,10 +245,7 @@ export const DockerContainers = ({ docker = [], isLoading, currentServer }) => {
                     <Box>
                       <Tooltip title="View Details">
                         <IconButton 
-                          onClick={() => {
-                            setSelectedContainer(container);
-                            setShowDetails(true);
-                          }}
+                          onClick={() => handleContainerDetails(container)}
                         >
                           <InfoIcon />
                         </IconButton>
@@ -330,7 +337,9 @@ export const DockerContainers = ({ docker = [], isLoading, currentServer }) => {
                           <Box sx={{ mt: 1 }}>
                             <Typography variant="body2">Ports:</Typography>
                             {Object.entries(container.ports).map(([port, mappings]) => (
-                              <Typography key={port} variant="body2"> - {port} → {mappings.join(", ")}</Typography>
+                              <Typography key={port} variant="body2">
+                                - {port} → {mappings.map(m => m.HostPort).join(", ")}
+                              </Typography>
                             ))}
                           </Box>
                         )}
@@ -371,14 +380,12 @@ export const DockerContainers = ({ docker = [], isLoading, currentServer }) => {
                         orientation="left"
                         domain={[0, 100]}
                         tickFormatter={(value) => `${value}%`}
-                        // label={{ value: 'CPU Usage', angle: -90, position: 'insideLeft' }}
                       />
                       <YAxis 
                         yAxisId="memory"
                         orientation="right"
                         domain={[0, 'dataMax']}
                         tickFormatter={(value) => `${(value/1024).toFixed(1)}GB`}
-                        // label={{ value: 'Memory Usage', angle: 90, position: 'insideRight' }}
                       />
                       <ChartTooltip 
                         labelFormatter={(value) => new Date(value).toLocaleString()}
@@ -411,17 +418,64 @@ export const DockerContainers = ({ docker = [], isLoading, currentServer }) => {
                   </ResponsiveContainer>
                 </Box>
                 <Typography variant="subtitle1" gutterBottom>Details</Typography>
-                <Typography>Status: {selectedContainer.status}</Typography>
-                <Typography>Image: {selectedContainer.image}</Typography>
-                <Typography>Size: {formatBytes(selectedContainer.size)}</Typography>
-                <Typography>Created: {new Date(selectedContainer.created).toLocaleString()}</Typography>
+                <Typography>Status: {selectedContainer.status || 'Unknown'}</Typography>
+                <Typography>Image: {selectedContainer.image || 'Unknown'}</Typography>
+                <Typography>Uptime: {selectedContainer.uptime || 'Unknown'}</Typography>
+                <Typography>Created: {selectedContainer.created ? new Date(selectedContainer.created).toLocaleString() : 'Unknown'}</Typography>
+
+                {/* Network Stats */}
+                {selectedContainer.network_stats && Object.keys(selectedContainer.network_stats).length > 0 && (
+                  <>
+                    <Typography variant="subtitle1" sx={{ mt: 2 }} gutterBottom>Network Statistics</Typography>
+                    {Object.entries(selectedContainer.network_stats).map(([network, stats]) => (
+                      <Box key={network} sx={{ mb: 1 }}>
+                        <Typography variant="body2" color="text.secondary">{network}</Typography>
+                        <Typography variant="body2">Received: {stats.rx_bytes || '0B'} ({stats.rx_packets || 0} packets)</Typography>
+                        <Typography variant="body2">Sent: {stats.tx_bytes || '0B'} ({stats.tx_packets || 0} packets)</Typography>
+                        {stats.rx_errors > 0 && (
+                          <Typography variant="body2" color="error">
+                            Receive Errors: {stats.rx_errors}
+                          </Typography>
+                        )}
+                        {stats.tx_errors > 0 && (
+                          <Typography variant="body2" color="error">
+                            Transmit Errors: {stats.tx_errors}
+                          </Typography>
+                        )}
+                        {stats.rx_dropped > 0 && (
+                          <Typography variant="body2" color="warning">
+                            Dropped Packets (RX): {stats.rx_dropped}
+                          </Typography>
+                        )}
+                        {stats.tx_dropped > 0 && (
+                          <Typography variant="body2" color="warning">
+                            Dropped Packets (TX): {stats.tx_dropped}
+                          </Typography>
+                        )}
+                      </Box>
+                    ))}
+                  </>
+                )}
+
+                {/* Volume Information */}
                 {selectedContainer.volumes && selectedContainer.volumes.length > 0 && (
                   <>
                     <Typography variant="subtitle1" sx={{ mt: 2 }} gutterBottom>Volumes</Typography>
                     {selectedContainer.volumes.map((volume, index) => (
-                      <Typography key={index}>
-                        {volume.name || volume.source}: {formatBytes(volume.size || 0)}
-                      </Typography>
+                      <Box key={index} sx={{ mb: 2, p: 1, bgcolor: 'background.paper', borderRadius: 1 }}>
+                        <Typography variant="body2">
+                          <strong>Source:</strong> {volume.source || 'Unknown'}
+                        </Typography>
+                        <Typography variant="body2">
+                          <strong>Destination:</strong> {volume.destination || 'Unknown'}
+                        </Typography>
+                        <Typography variant="body2">
+                          <strong>Type:</strong> {volume.type || 'Unknown'}
+                        </Typography>
+                        <Typography variant="body2">
+                          <strong>Size:</strong> {volume.size || 'Unknown'}
+                        </Typography>
+                      </Box>
                     ))}
                   </>
                 )}
