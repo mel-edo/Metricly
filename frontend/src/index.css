@@ -1,0 +1,144 @@
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Catppuccin Latte light mode colors */
+    --background: 220 9% 92%;   /* base */
+    --foreground: 234 16% 35%;  /* text */
+    --card: 220 9% 92%;         /* base */
+    --card-foreground: 234 16% 35%; /* text */
+    --popover: 220 9% 92%;      /* base */
+    --popover-foreground: 234 16% 35%; /* text */
+    --primary: 240 21% 76%;     /* lavender */
+    --primary-foreground: 234 16% 35%; /* text */
+    --secondary: 220 13% 91%;   /* mantle */
+    --secondary-foreground: 234 16% 35%; /* text */
+    --muted: 220 17% 80%;       /* surface1 */
+    --muted-foreground: 220 17% 60%;    /* subtext0 */
+    --accent: 240 21% 76%;      /* lavender */
+    --accent-foreground: 234 16% 35%;   /* text */
+    --destructive: 359 75% 45%; /* red */
+    --destructive-foreground: 220 9% 92%; /* base */
+    --border: 220 13% 80%;      /* surface0 */
+    --input: 220 13% 80%;       /* surface0 */
+    --ring: 240 21% 76%;        /* lavender */
+    --sidebar-background: 221 11% 83%; /* crust slightly lighter */
+    --sidebar-foreground: 234 16% 35%; /* text */
+    --sidebar-primary: 240 21% 76%;    /* lavender */
+    --sidebar-primary-foreground: 234 16% 35%; /* text */
+    --sidebar-accent: 220 13% 80%;     /* surface0 */
+    --sidebar-accent-foreground: 234 16% 35%; /* text */
+    --sidebar-border: 220 13% 80%;     /* surface0 */
+    --sidebar-ring: 240 21% 76%;       /* lavender */
+  }
+
+  .dark {
+    /* Catppuccin Mocha dark mode colors */
+    --background: 240 21% 15%;  /* base */
+    --foreground: 227 70% 91%;  /* text */
+    --card: 240 21% 15%;        /* base */
+    --card-foreground: 227 70% 91%; /* text */
+    --popover: 240 21% 15%;     /* base */
+    --popover-foreground: 227 70% 91%; /* text */
+    --primary: 249 62% 80%;     /* lavender */
+    --primary-foreground: 240 21% 15%; /* base */
+    --secondary: 240 24% 10%;   /* mantle */
+    --secondary-foreground: 227 70% 91%; /* text */
+    --muted: 231 15% 41%;       /* surface1 */
+    --muted-foreground: 220 14% 85%;    /* subtext0 */
+    --accent: 249 62% 80%;      /* lavender */
+    --accent-foreground: 240 21% 15%;   /* base */
+    --destructive: 343 82% 75%; /* red */
+    --destructive-foreground: 227 70% 91%; /* text */
+    --border: 231 15% 25%;      /* surface0 */
+    --input: 231 15% 25%;       /* surface0 */
+    --ring: 249 62% 80%;        /* lavender */
+    --sidebar-background: 237 16% 16%;  /* crust slightly lighter */
+    --sidebar-foreground: 227 70% 91%;  /* text */
+    --sidebar-primary: 249 62% 80%;     /* lavender */
+    --sidebar-primary-foreground: 0 0% 100%; /* white */
+    --sidebar-accent: 231 15% 25%;      /* surface0 */
+    --sidebar-accent-foreground: 227 70% 91%; /* text */
+    --sidebar-border: 231 15% 25%;      /* surface0 */
+    --sidebar-ring: 249 62% 80%;        /* lavender */
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground transition-colors duration-300;
+  }
+
+  .light .metricly-logo-text {
+    @apply text-transparent bg-gradient-to-r from-sapphire via-blue to-mauve bg-clip-text;
+  }
+
+  .dark .metricly-logo-text {
+    @apply text-transparent bg-gradient-to-r from-blue via-lavender to-mauve bg-clip-text;
+  }
+
+  /* Custom progress bar styling */
+  .progress-bar {
+    @apply h-2 rounded-full overflow-hidden bg-surface0 relative;
+  }
+
+  .progress-bar-fill-low {
+    @apply bg-green;
+  }
+
+  .progress-bar-fill-medium {
+    @apply bg-yellow;
+  }
+
+  .progress-bar-fill-high {
+    @apply bg-red;
+  }
+
+  /* Custom glassmorphism effect */
+  .glass-card {
+    @apply backdrop-blur-md border border-white/5 shadow-lg;
+  }
+
+  .dark .glass-card {
+    @apply bg-base/80;
+  }
+
+  .light .glass-card {
+    @apply bg-white/80;
+  }
+}
+
+/* Custom card hover effect */
+.metric-card {
+  @apply transition-all duration-200 hover:translate-y-[-2px] hover:shadow-md;
+}
+
+/* Modal Styles */
+dialog::backdrop {
+  background: rgba(0, 0, 0, 0.5);
+}
+
+dialog {
+  padding: 0;
+  border: none;
+  border-radius: 0.5rem;
+  background: transparent;
+  color: inherit;
+}
+
+/* Custom table styles */
+.table-container {
+  overflow-x: auto;
+}
+
+/* Custom transition for sidebar */
+.transition-width {
+  transition-property: width;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
