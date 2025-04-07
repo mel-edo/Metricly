@@ -1,51 +1,33 @@
 import { useState } from 'react';
-import { 
-  Tabs, 
-  TabsContent, 
+import {
+  Tabs,
+  TabsContent,
   TabsList,
-  TabsTrigger 
+  TabsTrigger
 } from "../components/ui/tabs";
-import { 
+import {
   Activity,
-  Box, 
+  Box,
   Server as ServerIcon
 } from "lucide-react";
 import { SystemOverview } from '@/components/SystemOverview';
 import { ContainerOverview } from '@/components/ContainerOverview';
-import type { Server } from '@/components/SwitchServerDialog';
+import { useServer } from '@/contexts/ServerContext';
 
 const Dashboard = () => {
   const [activeTab, setActiveTab] = useState('system');
-  const [activeServer, setActiveServer] = useState<Server>({
-    id: "1", 
-    name: "Production Server", 
-    address: "192.168.1.100",
-    isActive: true
-  });
-  
-  // Listen for server switch events
-  useState(() => {
-    const handleServerSwitch = (e: CustomEvent) => {
-      setActiveServer(e.detail);
-    };
-    
-    document.addEventListener('server-switched', handleServerSwitch as EventListener);
-    
-    return () => {
-      document.removeEventListener('server-switched', handleServerSwitch as EventListener);
-    };
-  });
-  
+  const { activeServer } = useServer();
+
   return (
     <div className="p-6 space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-semibold">Dashboard</h1>
         <div className="text-sm text-muted-foreground flex items-center">
           <ServerIcon className="w-4 h-4 mr-1" />
-          <span>Server: {activeServer?.name || "localhost"}</span>
+          <span>Server: {activeServer ? (activeServer.ip_address === '127.0.0.1' ? 'localhost' : activeServer.ip_address) : 'localhost'}</span>
         </div>
       </div>
-      
+
       <Tabs defaultValue="system" value={activeTab} onValueChange={setActiveTab} className="space-y-4">
         <TabsList className="bg-metricly-secondary">
           <TabsTrigger value="system" className="flex items-center">

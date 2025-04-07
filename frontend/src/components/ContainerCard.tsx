@@ -44,21 +44,19 @@ export function ContainerCard({
       onAction(action, id);
     }
   };
-  return <Card className="bg-metricly-secondary border-white/5 overflow-hidden hover:border-metricly-accent/20 transition-colors">
-      <CardHeader className="pb-3 relative">
-        <Badge className={`absolute top-0 right-0 mt-4 mr-4 ${statusColors[status]}`}>
-          {status}
-        </Badge>
-        <div className="flex items-start justify-between">
-          <div className="space-y-1 mt-6">
-            <CardTitle className="font-mono text-base flex items-center text-justify">
-              {name}
-            </CardTitle>
-            <p className="text-xs text-muted-foreground truncate max-w-[300px]">{image}</p>
-          </div>
+  return <Card className="bg-metricly-secondary border-white/5 overflow-hidden hover:border-metricly-accent/20 transition-colors flex flex-col h-full">
+      <CardHeader className="pb-3">
+        <div className="flex items-center justify-between">
+          <CardTitle className="font-mono text-base text-text">
+            {name}
+          </CardTitle>
+          <Badge className={`${statusColors[status]}`}>
+            {status}
+          </Badge>
         </div>
+        <p className="text-xs text-muted-foreground truncate max-w-[300px]">{image}</p>
       </CardHeader>
-      <CardContent className="pb-4 space-y-4">
+      <CardContent className="pb-4 space-y-4 flex-1">
         <div className="space-y-2">
           <div className="flex justify-between text-xs text-muted-foreground">
             <span>CPU Usage</span>
@@ -85,7 +83,9 @@ export function ContainerCard({
             </div>
           </div>}
 
-        <div className="flex space-x-2 mt-4">
+      </CardContent>
+      <div className="px-6 pb-4 mt-auto border-t border-metricly-background/20 pt-3">
+        <div className="flex space-x-2">
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
@@ -154,6 +154,6 @@ export function ContainerCard({
             </Tooltip>
           </TooltipProvider>
         </div>
-      </CardContent>
+      </div>
     </Card>;
 }

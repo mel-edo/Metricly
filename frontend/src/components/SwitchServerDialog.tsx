@@ -1,40 +1,15 @@
 import { useState, useEffect } from "react";
 import { Button } from "./ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "./ui/dialog";
-import { ServerIcon, Check } from "lucide-react";
+import { ServerIcon, Check, AlertCircle } from "lucide-react";
+import { useServer } from "../contexts/ServerContext";
+import { ServerInfo } from "../services/servers";
 
-export interface Server {
-  id: string;
-  name: string;
-  address: string;
-  isActive?: boolean;
-}
-
-interface SwitchServerDialogProps {
-  activeServer: Server | null;
-  onServerSwitch: (server: Server) => void;
-}
-
-export function SwitchServerDialog({ activeServer, onServerSwitch }: SwitchServerDialogProps) {
+export function SwitchServerDialog() {
   const [isOpen, setIsOpen] = useState(false);
-  const [servers, setServers] = useState<Server[]>([
-    { id: "1", name: "Production Server", address: "192.168.1.100", isActive: true },
-    { id: "2", name: "Staging Server", address: "192.168.1.101" },
-    { id: "3", name: "Development Server", address: "192.168.1.102" },
-    { id: "4", name: "Test Server", address: "192.168.1.103" },
-  ]);
+  const { servers, activeServer, setActiveServer, loading, error } = useServer();
 
   useEffect(() => {
-    // Update active server in the list when it changes
-    if (activeServer) {
-      setServers(prev =>
-        prev.map(server => ({
-          ...server,
-          isActive: server.id === activeServer.id
-        }))
-      );
-    }
-
     // Listen for the custom event to open the dialog
     const handleOpenDialog = () => setIsOpen(true);
     document.addEventListener('open-switch-server-dialog', handleOpenDialog);
@@ -42,10 +17,10 @@ export function SwitchServerDialog({ activeServer, onServerSwitch }: SwitchServe
     return () => {
       document.removeEventListener('open-switch-server-dialog', handleOpenDialog);
     };
-  }, [activeServer]);
+  }, []);
 
-  const handleServerSelect = (server: Server) => {
-    onServerSwitch(server);
+  const handleServerSelect = (server: ServerInfo) => {
+    setActiveServer(server);
     setIsOpen(false);
   };
 
@@ -63,28 +38,57 @@ export function SwitchServerDialog({ activeServer, onServerSwitch }: SwitchServe
         </DialogHeader>
 
         <div className="mt-4 space-y-2">
-          {servers.map((server) => (
-            <div
-              key={server.id}
-              className={`p-3 rounded-md flex items-center justify-between cursor-pointer transition-colors ${server.isActive
-                ? 'bg-metricly-accent/10 border border-metricly-accent/30'
-                : 'bg-metricly-background hover:bg-metricly-background/80 border border-transparent'}`}
-              onClick={() => !server.isActive && handleServerSelect(server)}
-            >
-              <div className="flex items-center gap-3">
-                <ServerIcon className={`w-5 h-5 ${server.isActive ? 'text-metricly-accent' : 'text-muted-foreground'}`} />
-                <div>
-                  <p className={`font-medium ${server.isActive ? 'text-metricly-accent' : ''}`}>{server.name}</p>
-                  <p className="text-xs text-muted-foreground">{server.address}</p>
-                </div>
-              </div>
-              {server.isActive && (
-                <div className="bg-metricly-accent/20 p-1 rounded-full">
-                  <Check className="w-4 h-4 text-metricly-accent" />
-                </div>
-              )}
+          {loading ? (
+            <div className="p-3 rounded-md bg-metricly-background flex items-center justify-center">
+              <p className="text-muted-foreground">Loading servers...</p>
             </div>
-          ))}
+          ) : error ? (
+            <div className="p-3 rounded-md bg-red-500/10 border border-red-500/30 flex items-center gap-2">
+              <AlertCircle className="w-5 h-5 text-red-500" />
+              <p className="text-sm text-red-500">{error}</p>
+            </div>
+          ) : servers.length === 0 ? (
+            <div className="p-3 rounded-md bg-metricly-background flex items-center justify-center">
+              <p className="text-muted-foreground">No servers available</p>
+            </div>
+          ) : (
+            servers.map((server) => (
+              <div
+                key={server.ip_address}
+                className={`p-3 rounded-md flex items-center justify-between cursor-pointer transition-colors ${
+                  activeServer && server.ip_address === activeServer.ip_address
+                    ? 'bg-metricly-accent/10 border border-metricly-accent/30'
+                    : 'bg-metricly-background hover:bg-metricly-background/80 border border-transparent'
+                }`}
+                onClick={() => activeServer && server.ip_address !== activeServer.ip_address && handleServerSelect(server)}
+              >
+                <div className="flex items-center gap-3">
+                  <ServerIcon
+                    className={`w-5 h-5 ${
+                      activeServer && server.ip_address === activeServer.ip_address
+                        ? 'text-metricly-accent'
+                        : 'text-muted-foreground'
+                    }`}
+                  />
+                  <div>
+                    <p className={`font-medium ${
+                      activeServer && server.ip_address === activeServer.ip_address
+                        ? 'text-metricly-accent'
+                        : ''
+                    }`}>
+                      {server.ip_address === '127.0.0.1' ? 'Localhost' : `Server ${server.ip_address}`}
+                    </p>
+                    <p className="text-xs text-muted-foreground">{server.ip_address}</p>
+                  </div>
+                </div>
+                {activeServer && server.ip_address === activeServer.ip_address && (
+                  <div className="bg-metricly-accent/20 p-1 rounded-full">
+                    <Check className="w-4 h-4 text-metricly-accent" />
+                  </div>
+                )}
+              </div>
+            ))
+          )}
         </div>
 
         <DialogFooter className="mt-6">

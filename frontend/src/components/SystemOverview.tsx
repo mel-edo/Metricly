@@ -1,57 +1,101 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { formatBytes } from '../utils/formatUtils';
 import { MetricsCardGrid } from './metrics/MetricsCardGrid';
 import { DiskMountsSection } from './metrics/DiskMountsSection';
 import { SystemMetricsChart } from './metrics/SystemMetricsChart';
+import { useServer } from '../contexts/ServerContext';
+import { getCurrentSystemMetrics, getServerMetrics, ServerMetrics } from '../services/servers';
+import { useQuery } from '@tanstack/react-query';
 
-const generateFakeHistoricalData = () => {
-  const data = [];
-  const now = new Date();
-
-  for (let i = 60; i >= 0; i--) {
-    const time = new Date(now.getTime() - i * 60000);
-    data.push({
-      time: time.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
-      cpu: Math.floor(Math.random() * 40) + 5,
-      memory: Math.floor(Math.random() * 60) + 20,
-      disk: Math.floor(Math.random() * 30) + 50,
-    });
-  }
-
-  return data;
+// Transform server metrics to chart data format
+const transformMetricsToChartData = (metrics: ServerMetrics[]) => {
+  return metrics.map(metric => ({
+    time: new Date(metric.timestamp).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
+    cpu: metric.cpu_percent,
+    memory: metric.memory_info.percent,
+    disk: Object.values(metric.disk_usage)[0]?.percent || 0,
+  }));
 };
 
 export function SystemOverview() {
-  const [historicalData] = useState(generateFakeHistoricalData());
+  const { activeServer } = useServer();
+  const serverIp = activeServer?.ip_address || '127.0.0.1';
 
-  const fakeSystemData = {
+  // Fetch current system metrics
+  const { data: currentMetrics, isLoading: isLoadingCurrent, error: currentError } = useQuery({
+    queryKey: ['currentMetrics', serverIp],
+    queryFn: () => getCurrentSystemMetrics(serverIp),
+    refetchInterval: 5000, // Refresh every 5 seconds
+  });
+
+  // Fetch historical metrics
+  const { data: historicalMetrics, isLoading: isLoadingHistorical, error: historicalError } = useQuery({
+    queryKey: ['historicalMetrics', serverIp],
+    queryFn: () => getServerMetrics(serverIp, '1h'),
+    refetchInterval: 30000, // Refresh every 30 seconds
+  });
+
+  // Process metrics for display
+  const isLoading = isLoadingCurrent || isLoadingHistorical;
+  const error = currentError || historicalError;
+
+  // Transform historical metrics to chart data
+  const chartData = historicalMetrics ? transformMetricsToChartData(historicalMetrics) : [];
+
+  // Prepare system data for display
+  const systemData = currentMetrics ? {
     cpu: {
-      usage: 11.8,
-      cores: 8,
-      model: 'Intel Core i7-10700K'
+      usage: currentMetrics.cpu_percent,
+      cores: currentMetrics.cpu_count || 1,
+      model: 'CPU'
     },
     memory: {
-      used: 4.75 * 1024 * 1024 * 1024, // 4.75 GB in bytes
-      total: 9.66 * 1024 * 1024 * 1024, // 9.66 GB in bytes
-      percentage: 53.2
+      used: currentMetrics.memory_info.used,
+      total: currentMetrics.memory_info.total,
+      percentage: currentMetrics.memory_info.percent
     },
     disk: {
-      used: 60.49 * 1024 * 1024 * 1024, // 60.49 GB in bytes
-      total: 75.16 * 1024 * 1024 * 1024, // 75.16 GB in bytes
-      percentage: 80.5,
-      mounts: [
-        { path: '/boot/efi', used: 35.73, total: 256.0 },
-        { path: '/home/meledo/Games', used: 66.24, total: 157.02 },
-        { path: '/home/meledo/Homework', used: 318.21, total: 457.38 }
-      ]
+      used: Object.values(currentMetrics.disk_usage)[0]?.used || 0,
+      total: Object.values(currentMetrics.disk_usage)[0]?.total || 0,
+      percentage: Object.values(currentMetrics.disk_usage)[0]?.percent || 0,
+      mounts: Object.entries(currentMetrics.disk_usage).map(([path, info]) => ({
+        path,
+        used: info.used,
+        total: info.total,
+        percentage: info.percent
+      }))
     }
-  };
+  } : null;
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <div className="p-8 bg-metricly-secondary rounded-lg animate-pulse">
+          <div className="h-6 bg-metricly-background/50 rounded w-1/3 mb-4"></div>
+          <div className="h-20 bg-metricly-background/30 rounded"></div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !systemData) {
+    return (
+      <div className="p-8 bg-red-500/10 border border-red-500/30 rounded-lg text-center">
+        <p className="text-red-500">Error loading system metrics</p>
+        <p className="text-sm text-red-400 mt-2">
+          {error instanceof Error ? error.message : 'Failed to fetch metrics'}
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
-      <MetricsCardGrid systemData={fakeSystemData} formatBytes={formatBytes} />
-      <DiskMountsSection mounts={fakeSystemData.disk.mounts} formatBytes={formatBytes} />
-      <SystemMetricsChart data={historicalData} />
+      <MetricsCardGrid systemData={systemData} formatBytes={formatBytes} />
+      {systemData.disk.mounts.length > 0 && (
+        <DiskMountsSection mounts={systemData.disk.mounts} formatBytes={formatBytes} />
+      )}
+      <SystemMetricsChart data={chartData} />
     </div>
   );
 }

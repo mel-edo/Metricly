@@ -2,9 +2,10 @@ import { useState, useEffect } from "react";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { toast } from "sonner";
-import { useNavigate } from "react-router-dom";
 import { ServerIcon, Loader2 } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "./ui/dialog";
+import { addServer } from "../services/servers";
+import { useServer } from "../contexts/ServerContext";
 
 export function AddServerDialog() {
   const [serverAddress, setServerAddress] = useState("");
@@ -18,29 +19,41 @@ export function AddServerDialog() {
     return () => document.removeEventListener('open-add-server-dialog', handleOpenDialog);
   }, []);
 
+  const { refreshServers } = useServer();
+
   const handleAddServer = async () => {
     if (!serverAddress) {
       toast.error("Please enter a server address");
       return;
     }
 
+    // Validate server address format
+    const validServerPattern = /^(localhost|127\.0\.0\.1|\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})(:\d+)?$/;
+    if (!validServerPattern.test(serverAddress)) {
+      toast.error(`Invalid server address format: ${serverAddress}`);
+      return;
+    }
+
     setIsVerifying(true);
 
-    // Simulate server verification
-    setTimeout(() => {
+    try {
+      // Convert localhost to 127.0.0.1 for API
+      const ipAddress = serverAddress.toLowerCase() === 'localhost' ? '127.0.0.1' : serverAddress;
+
+      // Add the server
+      await addServer(ipAddress);
+
+      toast.success(`Server ${serverAddress} added successfully!`);
+      setIsOpen(false);
+      setServerAddress("");
+
+      // Refresh the server list
+      await refreshServers();
+    } catch (error) {
+      toast.error(`Failed to add server: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    } finally {
       setIsVerifying(false);
-
-      // For demo purposes, only accept localhost or IP patterns
-      const validServerPattern = /^(localhost|127\.0\.0\.1|\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})(:\d+)?$/;
-
-      if (validServerPattern.test(serverAddress)) {
-        toast.success(`Server ${serverAddress} connected successfully!`);
-        setIsOpen(false);
-        setServerAddress("");
-      } else {
-        toast.error(`Unable to connect to ${serverAddress}. Please check the address and try again.`);
-      }
-    }, 1500);
+    }
   };
 
   return (

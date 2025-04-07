@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "./ui/button";
 import { useTheme } from "../hooks/use-theme";
+import { useAuth } from "../contexts/AuthContext";
 import {
   LayoutDashboard,
   Server,
@@ -49,6 +50,7 @@ const NavItem = ({ icon, label, active, onClick }: NavItemProps) => {
 const Sidebar = () => {
   const navigate = useNavigate();
   const { theme, setTheme } = useTheme();
+  const { logout } = useAuth();
   const [collapsed, setCollapsed] = useState(false);
   const [activePage, setActivePage] = useState("dashboard");
 
@@ -298,7 +300,10 @@ const Sidebar = () => {
           className={`w-full hover:bg-red/20 text-red hover:text-red ${
             collapsed ? "justify-center" : "justify-start"
           }`}
-          onClick={() => navigate('/login')}
+          onClick={() => {
+            logout();
+            navigate('/login');
+          }}
         >
           <LogOut size={18} className={collapsed ? "" : "mr-2"} />
           {!collapsed && <span>Logout</span>}

@@ -49,6 +49,29 @@ Metricly is a modern, real-time monitoring dashboard for Docker containers and s
 - Color-coded status chips
 - Real-time alert updates
 
+## Current Development Tasks
+
+### UI Improvements
+
+- Fix light mode theme and styling
+- Fix sidebar collapse/expand lag
+- Add tooltips to disk mounts in system tab to show full path
+- Improve container card layout for better visibility
+
+### Data Integration
+
+- Remove bogus data from servers section
+- Fix the add server popup functionality
+- Make container actions work properly
+- Fetch actual metrics for the network tab
+- Define and implement the connections tab functionality
+
+### Backend Integration
+
+- Complete reconnection of redesigned frontend to backend
+- Implement proper error handling for API requests
+- Add real-time updates for metrics
+
 ## Planned Features
 
 ### Advanced Analytics
@@ -84,13 +107,14 @@ Metricly is a modern, real-time monitoring dashboard for Docker containers and s
 
 ## Technical Stack
 
-- Frontend: React + Vite
-- UI Framework: Material-UI
+- Frontend: React + Vite + TypeScript
+- UI Framework: Shadcn UI + Tailwind CSS
 - Backend: Flask
 - Database: SQLite
 - Authentication: JWT
 - Charts: Recharts
 - Container Management: Docker SDK
+- State Management: React Context + React Query
 
 ## Getting Started
 
