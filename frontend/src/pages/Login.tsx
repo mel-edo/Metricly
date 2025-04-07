@@ -79,7 +79,7 @@ const Login = () => {
                     placeholder="Username"
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
-                    className="bg-metricly-secondary/50 border-metricly-secondary/80 pl-10"
+                    className="bg-metricly-secondary/50 border-metricly-secondary/80 pl-10 text-text placeholder:text-subtext0 focus-visible:ring-lavender/50"
                   />
                   <ServerIcon className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4" />
                 </div>
@@ -91,7 +91,7 @@ const Login = () => {
                     placeholder="Password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="bg-metricly-secondary/50 border-metricly-secondary/80 pl-10 pr-10"
+                    className="bg-metricly-secondary/50 border-metricly-secondary/80 pl-10 pr-10 text-text placeholder:text-subtext0 focus-visible:ring-lavender/50"
                   />
                   <EyeIcon className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4" />
                   <button
