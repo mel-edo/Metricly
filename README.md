@@ -9,28 +9,19 @@ Metricly is a modern, real-time monitoring dashboard for Docker containers and s
 - Real-time CPU, Memory, and Disk usage tracking
 - Historical data visualization with customizable time ranges
 - Interactive line charts for resource usage trends
-- Customizable alert thresholds for system resources
 - Support for multiple servers (including remote monitoring)
 
 ### Container Management
 
-- Comprehensive container health monitoring
 - Real-time container metrics (CPU, Memory usage)
 - Container status tracking (Running, Stopped, Error states)
-- Health indicators based on multiple factors:
-  - Resource usage
-  - Container status
-  - Restart count
-  - Exit codes
-- Visual progress bars for resource utilization
 
 ### User Interface
 
-- Modern, responsive Material-UI design
+- Modern, responsive Shadcn UI design
 - Dark/Light theme support
 - Real-time data updates
 - Interactive charts and graphs
-- Customizable dashboard layout
 - Mobile-friendly interface
 
 ### Security
@@ -43,11 +34,7 @@ Metricly is a modern, real-time monitoring dashboard for Docker containers and s
 
 ### Alerting System
 
-- Configurable alert thresholds
-- Visual alerts for resource usage
-- Container health status indicators
 - Color-coded status chips
-- Real-time alert updates
 
 ## Current Development Tasks
 
@@ -57,6 +44,7 @@ Metricly is a modern, real-time monitoring dashboard for Docker containers and s
 - Fix sidebar collapse/expand lag
 - Add tooltips to disk mounts in system tab to show full path
 - Improve container card layout for better visibility
+- Make the background of the login page more dynamic and cool
 
 ### Data Integration
 
@@ -65,12 +53,16 @@ Metricly is a modern, real-time monitoring dashboard for Docker containers and s
 - Make container actions work properly
 - Fetch actual metrics for the network tab
 - Define and implement the connections tab functionality
+- Implement container health indicators and progress bars for resource utilization
+- Add detailed container view when clicking from dashboard
 
 ### Backend Integration
 
 - Complete reconnection of redesigned frontend to backend
 - Implement proper error handling for API requests
 - Add real-time updates for metrics
+- Implement alerts system with configurable thresholds
+- Create settings page with username and password change functionality
 
 ## Planned Features
 
