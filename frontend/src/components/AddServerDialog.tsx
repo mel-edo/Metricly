@@ -86,7 +86,7 @@ export function AddServerDialog() {
                     placeholder="localhost:9090 or 192.168.1.10"
                     value={serverAddress}
                     onChange={(e) => setServerAddress(e.target.value)}
-                    className="bg-metricly-background border-metricly-secondary/80"
+                    className="bg-metricly-background border-metricly-secondary/80 text-text placeholder:text-subtext0"
                   />
                   <p className="text-xs text-muted-foreground">
                     Enter hostname or IP address with optional port

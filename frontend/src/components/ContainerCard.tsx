@@ -2,7 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { ProgressBar } from "./ProgressBar";
 import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
-import { Info, Terminal, RefreshCw, Play, Pause, Trash2, Edit } from "lucide-react";
+import { Info, Terminal, RefreshCw, Play, Pause, Trash2, Edit, CheckCircle, AlertTriangle, XCircle, AlertCircle } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "./ui/tooltip";
 interface ContainerCardProps {
   id: string;
@@ -57,6 +57,66 @@ export function ContainerCard({
         <p className="text-xs text-muted-foreground truncate max-w-[300px]">{image}</p>
       </CardHeader>
       <CardContent className="pb-4 space-y-4 flex-1">
+        {/* Health Status Indicator */}
+        <div className="flex items-center justify-between p-2 rounded-md bg-metricly-background/30 mb-3">
+          <span className="text-xs font-medium">Health Status</span>
+          <TooltipProvider>
+            {status === "running" ? (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="flex items-center text-green cursor-help">
+                    <CheckCircle className="h-4 w-4 mr-1" />
+                    <span className="text-xs">Healthy</span>
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Container is running normally</p>
+                  <p>All services are operational</p>
+                </TooltipContent>
+              </Tooltip>
+            ) : status === "paused" ? (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="flex items-center text-yellow cursor-help">
+                    <AlertTriangle className="h-4 w-4 mr-1" />
+                    <span className="text-xs">Paused</span>
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Container is paused</p>
+                  <p>Resume to restore functionality</p>
+                </TooltipContent>
+              </Tooltip>
+            ) : status === "error" ? (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="flex items-center text-red cursor-help">
+                    <AlertCircle className="h-4 w-4 mr-1" />
+                    <span className="text-xs">Error</span>
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Container has encountered an error</p>
+                  <p>Check logs for more information</p>
+                </TooltipContent>
+              </Tooltip>
+            ) : (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="flex items-center text-gray-400 cursor-help">
+                    <XCircle className="h-4 w-4 mr-1" />
+                    <span className="text-xs">Stopped</span>
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Container is stopped</p>
+                  <p>Start the container to resume services</p>
+                </TooltipContent>
+              </Tooltip>
+            )}
+          </TooltipProvider>
+        </div>
+
         <div className="space-y-2">
           <div className="flex justify-between text-xs text-muted-foreground">
             <span>CPU Usage</span>

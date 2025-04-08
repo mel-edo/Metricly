@@ -47,7 +47,7 @@ export default {
 				base: '#1e1e2e',
 				mantle: '#181825',
 				crust: '#11111b',
-				
+
 				// Catppuccin Latte Color Palette
                 latte: {
                     rosewater: '#dc8a78',
@@ -77,7 +77,7 @@ export default {
                     mantle: '#e6e9ef',
                     crust: '#dce0e8',
                 },
-				
+
 				// Original shadcn variables
 				border: 'hsl(var(--border))',
 				input: 'hsl(var(--input))',

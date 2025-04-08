@@ -2,6 +2,7 @@ import { authenticatedRequest, publicRequest } from './api';
 
 export interface ServerInfo {
   ip_address: string;
+  name?: string;
 }
 
 export interface ServerMetrics {

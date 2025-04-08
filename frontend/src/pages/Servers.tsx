@@ -10,8 +10,10 @@ import {
   Terminal,
   Settings,
   BadgeAlert,
-  CheckCircle2
+  CheckCircle2,
+  AlertCircle
 } from 'lucide-react';
+import { useServer } from '../contexts/ServerContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { Input } from '../components/ui/input';
 import { Button } from '../components/ui/button';
@@ -25,20 +27,10 @@ interface ServerProps {
   name: string;
   status: 'online' | 'offline' | 'warning';
   ip: string;
-  location: string;
-  type: string;
-  uptime: string;
+  location?: string;
+  type?: string;
+  uptime?: string;
 }
-
-const servers: ServerProps[] = [
-  { id: '1', name: 'prod-api-01', status: 'online', ip: '192.168.1.100', location: 'us-east-1', type: 'API Server', uptime: '45 days' },
-  { id: '2', name: 'prod-db-01', status: 'online', ip: '192.168.1.101', location: 'us-east-1', type: 'Database', uptime: '45 days' },
-  { id: '3', name: 'staging-api-01', status: 'warning', ip: '192.168.2.100', location: 'us-west-1', type: 'API Server', uptime: '12 days' },
-  { id: '4', name: 'staging-db-01', status: 'online', ip: '192.168.2.101', location: 'us-west-1', type: 'Database', uptime: '12 days' },
-  { id: '5', name: 'dev-api-01', status: 'offline', ip: '192.168.3.100', location: 'eu-west-1', type: 'API Server', uptime: '0' },
-  { id: '6', name: 'dev-db-01', status: 'online', ip: '192.168.3.101', location: 'eu-west-1', type: 'Database', uptime: '3 days' },
-  { id: '7', name: 'monitoring-01', status: 'online', ip: '192.168.0.10', location: 'us-east-1', type: 'Monitoring', uptime: '60 days' },
-];
 
 // Status component
 const ServerStatus = ({ status }: { status: ServerProps['status'] }) => {
@@ -63,6 +55,17 @@ const ServerStatus = ({ status }: { status: ServerProps['status'] }) => {
 const ServersPage = () => {
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = React.useState('');
+  const { servers: serverList, loading, error, refreshServers } = useServer();
+
+  // Transform server data to our format
+  const servers: ServerProps[] = serverList.map(server => ({
+    id: server.ip_address,
+    name: server.name || `Server ${server.ip_address}`,
+    status: 'online', // We would need to implement status checking
+    ip: server.ip_address,
+    type: 'Server',
+    uptime: 'Unknown' // We would need to implement uptime tracking
+  }));
 
   // Filter servers based on searchTerm
   const filteredServers = servers.filter(server =>
@@ -79,11 +82,20 @@ const ServersPage = () => {
     offline: servers.filter(s => s.status === 'offline').length,
   };
 
-  const handleRefresh = () => {
-    toast({
-      title: "Refreshed server list",
-      description: `${servers.length} servers refreshed`,
-    });
+  const handleRefresh = async () => {
+    try {
+      await refreshServers();
+      toast({
+        title: "Refreshed server list",
+        description: `${servers.length} servers refreshed`,
+      });
+    } catch (err) {
+      toast({
+        title: "Error refreshing servers",
+        description: err instanceof Error ? err.message : 'Unknown error',
+        variant: "destructive"
+      });
+    }
   };
 
   const handleOpenAddServerDialog = () => {
@@ -124,7 +136,7 @@ const ServersPage = () => {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card>
           <CardHeader className="py-4">
-            <CardTitle className="text-base flex justify-between">
+            <CardTitle className="text-base flex justify-between text-text">
               <span>Total Servers</span>
               <span>{stats.total}</span>
             </CardTitle>
@@ -156,37 +168,58 @@ const ServersPage = () => {
         </Card>
       </div>
 
+      {loading && (
+        <Card>
+          <CardContent className="py-6 text-center">
+            <div className="flex flex-col items-center justify-center space-y-2">
+              <RefreshCw className="h-8 w-8 animate-spin text-metricly-accent" />
+              <p className="text-muted-foreground">Loading servers...</p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {error && (
+        <Card className="border-metricly-error/50">
+          <CardContent className="py-6">
+            <div className="flex items-center space-x-2 text-metricly-error">
+              <AlertCircle className="h-5 w-5" />
+              <p>Error loading servers: {error}</p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Servers Table */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Server Inventory</CardTitle>
-          <CardDescription>
-            Manage and monitor your server infrastructure
-          </CardDescription>
-          <div className="relative mt-2">
-            <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search servers..."
-              className="pl-8"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>IP Address</TableHead>
-                <TableHead>Location</TableHead>
-                <TableHead>Type</TableHead>
-                <TableHead>Uptime</TableHead>
-                <TableHead className="w-[80px]"></TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
+      {!loading && !error && servers.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Server Inventory</CardTitle>
+            <CardDescription>
+              Manage and monitor your server infrastructure
+            </CardDescription>
+            <div className="relative mt-2">
+              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search servers..."
+                className="pl-8 text-text placeholder:text-subtext0"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>IP Address</TableHead>
+                  <TableHead>Type</TableHead>
+                  <TableHead className="w-[80px]"></TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
               {filteredServers.map((server) => (
                 <TableRow key={server.id}>
                   <TableCell className="font-medium">{server.name}</TableCell>
@@ -194,9 +227,7 @@ const ServersPage = () => {
                     <ServerStatus status={server.status} />
                   </TableCell>
                   <TableCell>{server.ip}</TableCell>
-                  <TableCell>{server.location}</TableCell>
                   <TableCell>{server.type}</TableCell>
-                  <TableCell>{server.uptime}</TableCell>
                   <TableCell>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
@@ -232,6 +263,26 @@ const ServersPage = () => {
           </Table>
         </CardContent>
       </Card>
+      )}
+
+      {!loading && !error && servers.length === 0 && (
+        <Card>
+          <CardContent className="py-6 text-center">
+            <div className="flex flex-col items-center justify-center space-y-2">
+              <Server className="h-8 w-8 text-muted-foreground" />
+              <p className="text-muted-foreground">No servers found</p>
+              <Button
+                variant="outline"
+                onClick={handleOpenAddServerDialog}
+                className="mt-2"
+              >
+                <CirclePlus className="mr-2 h-4 w-4" />
+                Add Server
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 };

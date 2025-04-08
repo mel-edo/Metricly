@@ -32,8 +32,13 @@ export function SwitchServerDialog() {
             <ServerIcon className="w-5 h-5 text-metricly-accent" />
             Switch Server
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="text-subtext0">
             Select a server to connect to from the list below.
+            {!loading && !error && servers.length > 0 && (
+              <div className="mt-1 text-text">
+                Total Servers: <span className="font-medium">{servers.length}</span>
+              </div>
+            )}
           </DialogDescription>
         </DialogHeader>
 
@@ -76,7 +81,7 @@ export function SwitchServerDialog() {
                         ? 'text-metricly-accent'
                         : ''
                     }`}>
-                      {server.ip_address === '127.0.0.1' ? 'Localhost' : `Server ${server.ip_address}`}
+                      {server.name || (server.ip_address === '127.0.0.1' ? 'Localhost' : `Server ${server.ip_address}`)}
                     </p>
                     <p className="text-xs text-muted-foreground">{server.ip_address}</p>
                   </div>

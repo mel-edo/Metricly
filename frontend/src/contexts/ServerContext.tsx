@@ -46,10 +46,10 @@ export const ServerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       // If we get an error, still set localhost as the active server
       // This ensures the app can still function with local containers
       if (!activeServer) {
-        const localhost = { ip_address: '127.0.0.1' };
+        const localhost = { ip_address: '127.0.0.1', name: 'Localhost' };
         setActiveServer(localhost);
 
-        // Add localhost to the servers list
+        // Add only localhost to the servers list - no bogus data
         setServers([localhost]);
       }
 
