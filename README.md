@@ -15,6 +15,7 @@ Metricly is a modern, real-time monitoring dashboard for Docker containers and s
 
 - Real-time container metrics (CPU, Memory usage)
 - Container status tracking (Running, Stopped, Error states)
+- Color-coded status chips
 
 ### User Interface
 
@@ -34,35 +35,33 @@ Metricly is a modern, real-time monitoring dashboard for Docker containers and s
 
 ### Alerting System
 
-- Color-coded status chips
+- not started
 
 ## Current Development Tasks
 
 ### UI Improvements
 
-- Fix light mode theme and styling
-- Fix sidebar collapse/expand lag
-- Add tooltips to disk mounts in system tab to show full path
-- Improve container card layout for better visibility
-- Make the background of the login page more dynamic and cool
+- Fix sidebar collapse/expand lag - tricky
+- Make the background of the login page more dynamic and cool - tricky
+- Fix light mode theme and styling (proper light mode integration) - tricky
 
 ### Data Integration
 
-- Remove bogus data from servers section
 - Fix the add server popup functionality
 - Make container actions work properly
 - Fetch actual metrics for the network tab
+- figure out the actual logic behind container's healthy status
+- Add detailed container view when clicking from dashboard, maybe route to container tab in sidebar
 - Define and implement the connections tab functionality
-- Implement container health indicators and progress bars for resource utilization
-- Add detailed container view when clicking from dashboard
+- make the options work for each server in the servers section
 
 ### Backend Integration
 
-- Complete reconnection of redesigned frontend to backend
-- Implement proper error handling for API requests
-- Add real-time updates for metrics
-- Implement alerts system with configurable thresholds
 - Create settings page with username and password change functionality
+- Implement proper error handling for API requests (to which end is this required)
+- Implement alerts system with configurable thresholds (check on how to alert the user)
+- Add real-time updates for metrics (should be done)
+- Complete reconnection of redesigned frontend to backend (check what is left to do in here)
 
 ## Planned Features
 
@@ -92,10 +91,11 @@ Metricly is a modern, real-time monitoring dashboard for Docker containers and s
 
 ### Additional Features
 
-- Advanced log analysis and filtering
+- Advanced log analysis and filtering (what does adv log analysis even mean)
 - Automated backup and restore
-- Custom alert rules and notifications
-- API for external integrations
+- Custom alert rules and notifications (alerts on email, discord etc)
+- check on all API for external integrations that could be used to make this even better
+
 
 ## Technical Stack
 
