@@ -150,7 +150,7 @@ export function ContainerOverview() {
           <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Search containers..."
-            className="pl-8 bg-metricly-secondary border-metricly-secondary"
+            className="pl-8 bg-metricly-secondary border-metricly-secondary text-text placeholder:text-subtext0"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
