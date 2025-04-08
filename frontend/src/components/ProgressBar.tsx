@@ -20,7 +20,7 @@ export function ProgressBar({
   size = "md",
 }: ProgressBarProps) {
   const percentage = Math.round((value / max) * 100);
-  
+
   // Determine color based on percentage
   let fillColorClass = "progress-bar-fill-low";
   if (percentage > 80) {
@@ -28,17 +28,17 @@ export function ProgressBar({
   } else if (percentage > 50) {
     fillColorClass = "progress-bar-fill-medium";
   }
-  
-  const heightClass = 
-    size === "sm" ? "h-1.5" : 
-    size === "lg" ? "h-3" : 
+
+  const heightClass =
+    size === "sm" ? "h-1.5" :
+    size === "lg" ? "h-3" :
     "h-2";
-  
+
   const progressBar = (
     <div className={`flex items-center space-x-2 w-full ${className}`}>
       {label && <div className="text-xs text-muted-foreground w-24 overflow-hidden text-ellipsis whitespace-nowrap">{label}</div>}
       <div className={`progress-bar flex-1 ${heightClass}`}>
-        <div 
+        <div
           className={`${fillColorClass} h-full rounded-full transition-all duration-500 ease-in-out`}
           style={{ width: `${percentage}%` }}
         />
@@ -46,7 +46,7 @@ export function ProgressBar({
       {showPercentage && <span className="text-xs font-medium">{percentage}%</span>}
     </div>
   );
-  
+
   if (tooltip) {
     return (
       <TooltipProvider>
@@ -55,12 +55,14 @@ export function ProgressBar({
             {progressBar}
           </TooltipTrigger>
           <TooltipContent>
-            <p>{tooltip}</p>
+            {tooltip.split('\n').map((line, i) => (
+              <p key={i}>{line}</p>
+            ))}
           </TooltipContent>
         </Tooltip>
       </TooltipProvider>
     );
   }
-  
+
   return progressBar;
 }
