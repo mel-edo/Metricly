@@ -41,7 +41,7 @@ Metricly is a modern, real-time monitoring dashboard for Docker containers and s
 
 ### UI Improvements
 
-- Fix sidebar collapse/expand lag - tricky
+- Fix sidebar collapse/expand lag - somehow fixed??
 - Make the background of the login page more dynamic and cool - tricky
 - Fix light mode theme and styling (proper light mode integration) - tricky
 
@@ -95,7 +95,6 @@ Metricly is a modern, real-time monitoring dashboard for Docker containers and s
 - Automated backup and restore
 - Custom alert rules and notifications (alerts on email, discord etc)
 - check on all API for external integrations that could be used to make this even better
-
 
 ## Technical Stack
 
