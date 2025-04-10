@@ -3,19 +3,6 @@ import { Check, ChevronsUpDown } from "lucide-react"
 
 import { cn } from "../../lib/utils"
 import { Button } from "./button"
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-} from "./command"
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "./popover"
-import { ScrollArea } from "./scroll-area"
 
 export type ComboboxOption = {
   value: string
@@ -27,7 +14,6 @@ interface ComboboxProps {
   value: string
   onChange: (value: string) => void
   placeholder?: string
-  emptyText?: string
   className?: string
 }
 
@@ -36,54 +22,81 @@ export function Combobox({
   value,
   onChange,
   placeholder = "Select an option",
-  emptyText = "No results found.",
   className,
 }: ComboboxProps) {
-  const [open, setOpen] = React.useState(false)
-  const [searchQuery, setSearchQuery] = React.useState("")
+  const [isOpen, setIsOpen] = React.useState(false)
+  const [searchTerm, setSearchTerm] = React.useState('')
 
+  // Filter options based on search term
   const filteredOptions = React.useMemo(() => {
-    if (!searchQuery) return options
-    return options.filter((option) =>
-      option.label.toLowerCase().includes(searchQuery.toLowerCase())
+    if (!searchTerm) return options
+    return options.filter(option =>
+      option.label.toLowerCase().includes(searchTerm.toLowerCase())
     )
-  }, [options, searchQuery])
+  }, [options, searchTerm])
+
+  // Handle option selection
+  const handleSelect = (optionValue: string) => {
+    onChange(optionValue)
+    setIsOpen(false)
+    setSearchTerm('')
+  }
+
+  // Handle click outside to close dropdown
+  React.useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      const target = e.target as HTMLElement
+      if (!target.closest('.combobox-container')) {
+        setIsOpen(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <Button
-          variant="outline"
-          role="combobox"
-          aria-expanded={open}
-          className={cn("w-full justify-between h-10 px-3 py-2", className)}
-          onClick={() => setOpen(!open)}
-        >
-          {value
-            ? options.find((option) => option.value === value)?.label
-            : placeholder}
-          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
-        <Command className="w-full">
-          <CommandInput
-            placeholder={placeholder}
-            onValueChange={setSearchQuery}
-            className="h-9"
-          />
-          <CommandEmpty>{emptyText}</CommandEmpty>
-          <ScrollArea className="max-h-[200px]">
-            <CommandGroup>
-              {filteredOptions.map((option) => (
-                <CommandItem
+    <div className={`relative combobox-container ${className}`}>
+      {/* Trigger button */}
+      <Button
+        type="button"
+        variant="outline"
+        role="combobox"
+        aria-expanded={isOpen}
+        className="w-full justify-between h-10 px-3 py-2 bg-metricly-secondary border-metricly-secondary text-text hover:border-metricly-accent focus:border-metricly-accent"
+        onClick={() => setIsOpen(!isOpen)}
+      >
+        {value ? options.find(option => option.value === value)?.label : placeholder}
+        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+      </Button>
+
+      {/* Dropdown */}
+      {isOpen && (
+        <div className="absolute z-50 w-full mt-1 bg-metricly-background border border-metricly-secondary rounded-md shadow-md">
+          {/* Search input */}
+          <div className="p-2">
+            <input
+              type="text"
+              className="w-full px-3 py-2 text-sm bg-metricly-secondary border border-metricly-secondary rounded-md text-text placeholder:text-muted-foreground focus:outline-none focus:border-metricly-accent"
+              placeholder="Search..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              onClick={(e) => e.stopPropagation()}
+            />
+          </div>
+
+          {/* Options list */}
+          <div className="max-h-[200px] overflow-y-auto py-1">
+            {filteredOptions.length === 0 ? (
+              <div className="px-3 py-2 text-sm text-muted-foreground text-center">
+                No options found
+              </div>
+            ) : (
+              filteredOptions.map(option => (
+                <div
                   key={option.value}
-                  value={option.value}
-                  onSelect={(currentValue) => {
-                    onChange(currentValue === value ? "" : currentValue)
-                    setOpen(false)
-                  }}
-                  className="cursor-pointer hover:bg-metricly-accent/20 text-text"
+                  className={`px-3 py-2 text-sm cursor-pointer hover:bg-metricly-accent/20 flex items-center ${value === option.value ? 'bg-metricly-accent/30' : ''}`}
+                  onClick={() => handleSelect(option.value)}
                 >
                   <Check
                     className={cn(
@@ -91,13 +104,13 @@ export function Combobox({
                       value === option.value ? "opacity-100" : "opacity-0"
                     )}
                   />
-                  {option.label}
-                </CommandItem>
-              ))}
-            </CommandGroup>
-          </ScrollArea>
-        </Command>
-      </PopoverContent>
-    </Popover>
+                  <span className="text-text">{option.label}</span>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      )}
+    </div>
   )
 }

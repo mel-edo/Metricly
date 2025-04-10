@@ -66,6 +66,7 @@ const ContainersPage = () => {
 
   // Handle container selection change
   const handleContainerChange = (containerId: string) => {
+    console.log('Container selected:', containerId);
     setSelectedContainer(containerId);
     setMetricsData(generateMockMetricsData());
   };
@@ -193,8 +194,7 @@ const ContainersPage = () => {
                   value={selectedContainer}
                   onChange={handleContainerChange}
                   placeholder="Select a container"
-                  emptyText="No containers found"
-                  className="bg-metricly-secondary border-metricly-secondary text-text w-full hover:border-metricly-accent focus:border-metricly-accent"
+                  className="w-full"
                 />
               </div>
             </div>
