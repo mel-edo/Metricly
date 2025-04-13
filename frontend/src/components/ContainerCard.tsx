@@ -387,7 +387,7 @@ export function ContainerCard({
                 <Button
                   variant="outline"
                   size="icon"
-                  className="h-8 w-8 hover:bg-metricly-accent/10 hover:text-metricly-accent hover:border-metricly-accent"
+                  className="h-8 w-8 hover:text-metricly-accent hover:border-metricly-accent hover:bg-metricly-accent/10"
                   onClick={(e) => {
                     e.stopPropagation();
                     e.preventDefault();
@@ -406,7 +406,7 @@ export function ContainerCard({
 
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => handleAction('terminal')}>
+                <Button variant="outline" size="icon" className="h-8 w-8 hover:text-metricly-accent hover:border-metricly-accent hover:bg-metricly-accent/10" onClick={() => handleAction('terminal')}>
                   <Terminal className="h-4 w-4" />
                 </Button>
               </TooltipTrigger>
@@ -417,7 +417,7 @@ export function ContainerCard({
 
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => handleAction('restart')}>
+                <Button variant="outline" size="icon" className="h-8 w-8 hover:text-metricly-accent hover:border-metricly-accent hover:bg-metricly-accent/10" onClick={() => handleAction('restart')}>
                   <RefreshCw className="h-4 w-4" />
                 </Button>
               </TooltipTrigger>
@@ -428,7 +428,7 @@ export function ContainerCard({
 
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => handleAction(status === 'running' ? 'stop' : 'start')}>
+                <Button variant="outline" size="icon" className="h-8 w-8 hover:text-metricly-accent hover:border-metricly-accent hover:bg-metricly-accent/10" onClick={() => handleAction(status === 'running' ? 'stop' : 'start')}>
                   {status === 'running' ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
                 </Button>
               </TooltipTrigger>
@@ -439,7 +439,7 @@ export function ContainerCard({
 
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => handleAction('edit')}>
+                <Button variant="outline" size="icon" className="h-8 w-8 hover:text-metricly-accent hover:border-metricly-accent hover:bg-metricly-accent/10" onClick={() => handleAction('edit')}>
                   <Edit className="h-4 w-4" />
                 </Button>
               </TooltipTrigger>
@@ -450,7 +450,7 @@ export function ContainerCard({
 
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button variant="outline" size="icon" className="h-8 w-8 hover:bg-red-900/20 hover:text-red-400" onClick={() => handleAction('delete')}>
+                <Button variant="outline" size="icon" className="h-8 w-8 hover:text-metricly-error hover:border-metricly-error hover:bg-metricly-error/10" onClick={() => handleAction('delete')}>
                   <Trash2 className="h-4 w-4" />
                 </Button>
               </TooltipTrigger>
