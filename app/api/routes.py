@@ -8,6 +8,7 @@ from functools import wraps
 from werkzeug.security import check_password_hash
 from app.metrics.system_metrics import get_system_metrics
 from app.metrics.docker_metrics import get_docker_metrics
+from app.metrics.network_metrics import get_network_stats
 from app.models.database import Metric, db, Server, User, Threshold  # ✅ Ensure User model exists
 import os
 from flask_limiter import Limiter
@@ -159,6 +160,24 @@ def store_system_metrics():
 @api_bp.route('/docker', methods=['GET'])
 def docker_metrics():
     return jsonify(get_docker_metrics())
+
+# ✅ Get network interfaces and stats (public access)
+@api_bp.route('/network', methods=['GET'])
+def network_stats():
+    try:
+        server_ip = request.args.get('server', '127.0.0.1')
+
+        # For localhost, get network stats directly
+        if server_ip == '127.0.0.1':
+            return jsonify(get_network_stats())
+        else:
+            # For remote servers, we would need to implement a way to fetch network stats
+            # This could be done by setting up an agent on the remote server
+            # For now, return an error
+            return jsonify({"error": "Remote network stats not implemented yet"}), 501
+    except Exception as e:
+        print(f"Error getting network stats: {str(e)}")
+        return jsonify({"error": str(e)}), 500
 
 # ✅ Get all servers (protected)
 @api_bp.route('/servers', methods=['GET'])
