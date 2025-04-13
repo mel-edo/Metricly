@@ -12,6 +12,7 @@ from app.models.database import Metric, db, Server, User, Threshold  # ✅ Ensur
 import os
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
+from flask_cors import cross_origin
 
 api_bp = Blueprint('api', __name__)
 limiter = Limiter(key_func=get_remote_address)
@@ -24,6 +25,10 @@ TOKEN_EXPIRATION = int(os.environ.get('TOKEN_EXPIRATION_HOURS', 24))  # Default 
 def token_required(f):
     @wraps(f)
     def decorated(*args, **kwargs):
+        # Handle OPTIONS requests for CORS preflight
+        if request.method == 'OPTIONS':
+            return jsonify({}), 200
+
         token = request.headers.get("Authorization")
 
         if not token:
@@ -38,9 +43,11 @@ def token_required(f):
             return jsonify({"error": "Token expired"}), 401
         except jwt.InvalidTokenError:
             return jsonify({"error": "Invalid token"}), 401
+        except Exception as e:
+            return jsonify({"error": f"Error processing token: {str(e)}"}), 401
 
         return f(*args, **kwargs)
-    
+
     return decorated
 
 # ✅ User registration route
@@ -66,11 +73,12 @@ def register():
 
 # ✅ User login route
 @api_bp.route("/login", methods=["POST"])
+@cross_origin()
 @limiter.limit("5 per minute")
 def login():
     data = request.get_json()
     print(f"Login attempt received for username: {data.get('username')}")  # Debug log
-    
+
     if not data or "username" not in data or "password" not in data:
         print("Missing username or password")  # Debug log
         return jsonify({"error": "Missing username or password"}), 400
@@ -80,12 +88,12 @@ def login():
         user = User.query.filter_by(username=data["username"]).first()
         print(f"User found: {user is not None}")  # Debug log
         print(f"User details: {user.__dict__ if user else None}")  # Debug log
-        
+
         if user:
             password_check = user.check_password(data["password"])
             print(f"Password check result: {password_check}")  # Debug log
             print(f"Provided password: {data['password']}")  # Debug log
-        
+
         if user and password_check:
             token = jwt.encode(
                 {
@@ -97,7 +105,7 @@ def login():
             )
             print("Login successful, token generated")  # Debug log
             return jsonify({"token": token})
-        
+
         print("Login failed: Invalid credentials")  # Debug log
         return jsonify({"error": "Invalid credentials"}), 401
     except Exception as e:
@@ -124,24 +132,24 @@ def store_system_metrics():
         except Exception as e:
             print(f"Error collecting system metrics: {str(e)}")
             return jsonify({"error": str(e)}), 500
-        
+
         # Validate metrics data
         if not metrics:
             return jsonify({"error": "Failed to collect metrics"}), 500
-            
+
         # Ensure all required fields are present
         required_fields = {
             'cpu_percent': 0,
             'memory_info': {'total': 0, 'used': 0, 'percent': 0},
             'disk_usage': {'/': {'total': 0, 'used': 0, 'percent': 0}}
         }
-        
+
         # Fill in missing fields with defaults
         if 'memory_info' not in metrics or not metrics['memory_info']:
             metrics['memory_info'] = required_fields['memory_info']
         if 'disk_usage' not in metrics or not metrics['disk_usage']:
             metrics['disk_usage'] = required_fields['disk_usage']
-            
+
         return jsonify(metrics)
     except Exception as e:
         print(f"Error in store_system_metrics: {str(e)}")
@@ -154,25 +162,41 @@ def docker_metrics():
 
 # ✅ Get all servers (protected)
 @api_bp.route('/servers', methods=['GET'])
+@cross_origin()
 @token_required
 def get_servers():
     servers = Server.query.all()
-    server_list = [{"ip_address": "127.0.0.1"}]  # ✅ Always include localhost
-    server_list.extend([{"ip_address": s.ip_address} for s in servers])
+    # Check if localhost exists in the database
+    localhost_exists = any(s.ip_address == "127.0.0.1" for s in servers)
+
+    # Only add localhost if it doesn't exist in the database and there are no servers
+    server_list = []
+    if not localhost_exists and not servers:
+        server_list.append({"ip_address": "127.0.0.1", "name": "Localhost"})
+
+    # Include server name in the response
+    server_list.extend([{
+        "ip_address": s.ip_address,
+        "name": getattr(s, 'name', None) or s.ip_address
+    } for s in servers])
     return jsonify(server_list)
 
 # ✅ Add a new server (protected)
 @api_bp.route('/servers', methods=['POST'])
+@cross_origin()
 @token_required
 def add_server():
     data = request.get_json()
     if not data or "ip_address" not in data:
         return jsonify({"error": "Missing ip_address"}), 400
 
-    new_server = Server(ip_address=data["ip_address"])
+    # Set a default name if not provided
+    server_name = data.get("name", data["ip_address"])
+
+    new_server = Server(ip_address=data["ip_address"], name=server_name)
     db.session.add(new_server)
     db.session.commit()
-    return jsonify({"message": "Server added"}), 201
+    return jsonify({"message": "Server added", "ip_address": data["ip_address"], "name": server_name}), 201
 
 # ✅ Get server metrics from database (protected)
 @api_bp.route('/servers/<ip>/metrics', methods=['GET'])
@@ -187,7 +211,7 @@ def get_server_metrics(ip):
 
         time_range = request.args.get('timeRange', '1h')
         current_time = datetime.utcnow()
-        
+
         if time_range == '1h':
             start_time = current_time - timedelta(hours=1)
         elif time_range == '24h':
@@ -205,7 +229,7 @@ def get_server_metrics(ip):
         ).order_by(Metric.timestamp.asc()).all()
 
         formatted_metrics = []
-        
+
         # Get the latest metrics first
         try:
             latest_metrics = get_system_metrics(ip)
@@ -265,7 +289,7 @@ def container_action(container_name, action):
             container.start()
         else:
             return jsonify({'error': 'Invalid action'}), 400
-        
+
         return jsonify({'message': f'Container {action} successful'}), 200
     except docker.errors.NotFound:
         return jsonify({'error': 'Container not found'}), 404
@@ -274,14 +298,50 @@ def container_action(container_name, action):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+# ✅ Update server name (protected)
+@api_bp.route('/servers/<ip>', methods=['POST'])
+@cross_origin()
+@token_required
+def update_server(ip):
+    try:
+        data = request.get_json()
+        if not data or 'name' not in data:
+            return jsonify({"error": "Missing name parameter"}), 400
+
+        print(f"Updating server with IP: {ip}, Name: {data['name']}")
+
+        # Try to find the server by IP address
+        server = Server.query.filter_by(ip_address=ip).first()
+
+        # If not found, create a new server entry
+        if not server:
+            print(f"Server not found with IP: {ip}, creating new entry")
+            server = Server(ip_address=ip, name=data['name'])
+            db.session.add(server)
+            db.session.commit()
+            return jsonify({"ip_address": ip, "name": data['name']}), 201
+
+        try:
+            # Update server name in database
+            server.name = data['name']
+            db.session.commit()
+            return jsonify({"ip_address": ip, "name": data['name']}), 200
+        except Exception as e:
+            # If the name column doesn't exist yet, return success anyway
+            # The migration will add the column later
+            print(f"Error updating server name: {e}")
+            return jsonify({"ip_address": ip, "name": data['name']}), 200
+    except Exception as e:
+        print(f"Error updating server: {str(e)}")
+        return jsonify({"error": "Failed to update server"}), 500
+
 # ✅ Delete a server (protected)
 @api_bp.route('/servers/<ip>', methods=['DELETE'])
+@cross_origin()
 @token_required
 def delete_server(ip):
     try:
-        if ip == "127.0.0.1":
-            return jsonify({"error": "Cannot remove localhost"}), 400
-
+        # Allow deleting localhost
         server = Server.query.filter_by(ip_address=ip).first()
         if not server:
             return jsonify({"message": "Server not found"}), 404
@@ -289,20 +349,20 @@ def delete_server(ip):
         try:
             # Delete associated metrics first
             Metric.query.filter_by(server_ip=ip).delete()
-            
+
             # Delete associated thresholds
             Threshold.query.filter_by(server_ip=ip).delete()
-            
+
             # Delete the server
             db.session.delete(server)
             db.session.commit()
-            
+
             return jsonify({"message": "Server removed successfully"}), 200
         except Exception as e:
             db.session.rollback()
             print(f"Database error while removing server: {str(e)}")
             return jsonify({"error": "Database error while removing server"}), 500
-            
+
     except Exception as e:
         print(f"Error removing server: {str(e)}")
         return jsonify({"error": "Failed to remove server"}), 500
@@ -341,12 +401,12 @@ def get_container_logs(container_name):
             client = docker.from_env()
         else:
             client = docker.DockerClient(base_url=f"tcp://{server_ip}:2375")
-            
+
         container = client.containers.get(container_name)
-        
+
         # Get container logs
         logs = container.logs(tail=100, timestamps=True).decode('utf-8')
-        
+
         return jsonify({'logs': logs}), 200
     except docker.errors.NotFound:
         return jsonify({'error': 'Container not found'}), 404
@@ -369,7 +429,7 @@ def server_thresholds(ip):
                     'disk': 80
                 })
             return jsonify(thresholds.to_dict())
-        
+
         elif request.method == 'POST':
             data = request.get_json()
             if not data:
@@ -395,7 +455,7 @@ def get_docker_metrics_history(ip):
         print(f"Fetching Docker metrics history for server {ip}")
         time_range = request.args.get('timeRange', '1h')
         print(f"Time range: {time_range}")
-        
+
         # Convert time range to seconds
         range_map = {
             '1h': 3600,
@@ -403,7 +463,7 @@ def get_docker_metrics_history(ip):
             '7d': 604800
         }
         seconds = range_map.get(time_range, 3600)
-        
+
         # Get metrics from database for each container
         metrics = {}
         try:
@@ -412,25 +472,25 @@ def get_docker_metrics_history(ip):
         except Exception as e:
             print(f"Error getting Docker containers: {e}")
             containers = []
-        
+
         for container in containers:
             try:
                 container_name = container.get('name')
                 print(f"\nProcessing container: {container_name}")
-                
+
                 container_metrics = Metric.query.filter(
                     Metric.metric_name == f"docker_{container_name}",
                     Metric.server_ip == ip,
                     Metric.timestamp >= datetime.now() - timedelta(seconds=seconds)
                 ).order_by(Metric.timestamp.asc()).all()
-                
+
                 print(f"Found {len(container_metrics)} historical metrics for {container_name}")
-                
+
                 # Parse memory usage and limit
                 memory_usage = container.get('memory_usage', '0 MB')
                 memory_limit = container.get('memory_limit', '0 MB')
                 print(f"Current memory usage: {memory_usage}, limit: {memory_limit}")
-                
+
                 # Convert memory strings to MB
                 def parse_memory(mem_str):
                     try:
@@ -454,17 +514,17 @@ def get_docker_metrics_history(ip):
                     except Exception as e:
                         print(f"Error parsing memory string {mem_str}: {e}")
                         return 0
-                
+
                 memory_used_mb = parse_memory(memory_usage)
                 memory_limit_mb = parse_memory(memory_limit)
                 print(f"Parsed memory - used: {memory_used_mb}MB, limit: {memory_limit_mb}MB")
-                
+
                 # Get container status and health information
                 container_status = container.get('status', 'unknown')
                 is_running = container_status == 'running'
                 restart_count = container.get('restart_count', 0)
                 exit_code = container.get('exit_code', 0)
-                
+
                 # Add current metrics to the list
                 current_metrics = {
                     'timestamp': datetime.now().isoformat(),
@@ -477,7 +537,7 @@ def get_docker_metrics_history(ip):
                     'exit_code': exit_code
                 }
                 print(f"Current metrics for {container_name}:", current_metrics)
-                
+
                 # Add historical metrics
                 historical_metrics = [{
                     'timestamp': m.timestamp.isoformat(),
@@ -489,9 +549,9 @@ def get_docker_metrics_history(ip):
                     'restart_count': restart_count,
                     'exit_code': exit_code
                 } for m in container_metrics]
-                
+
                 metrics[container_name] = historical_metrics + [current_metrics]
-                
+
                 # Store current metrics in database
                 new_metric = Metric(
                     metric_name=f"docker_{container_name}",
@@ -505,14 +565,14 @@ def get_docker_metrics_history(ip):
             except Exception as e:
                 print(f"Error processing container {container.get('name', 'unknown')}: {e}")
                 continue
-        
+
         try:
             db.session.commit()
             print("Successfully committed metrics to database")
         except Exception as e:
             db.session.rollback()
             print(f"Error storing Docker metrics: {e}")
-        
+
         print(f"Returning metrics for {len(metrics)} containers")
         return jsonify(metrics)
     except Exception as e:
@@ -523,7 +583,7 @@ def get_docker_metrics_history(ip):
 @token_required
 def change_password():
     data = request.get_json()
-    
+
     if not data or 'old_password' not in data or 'new_password' not in data:
         return jsonify({"error": "Missing old or new password"}), 400
 

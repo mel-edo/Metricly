@@ -8,7 +8,7 @@ db = SQLAlchemy()
 # ✅ Metrics Model
 class Metric(db.Model):
     __tablename__ = 'metric'
-    
+
     m_id = db.Column('m_id', db.Integer, primary_key=True)
     metric_name = db.Column('metric_name', db.String(50), nullable=False)
     metric_value = db.Column('metric_value', db.Float, nullable=False)  # CPU percentage
@@ -37,9 +37,10 @@ class Metric(db.Model):
 # ✅ Server Model
 class Server(db.Model):
     __tablename__ = 'server'
-    
+
     s_id = db.Column('s_id', db.Integer, primary_key=True)
     ip_address = db.Column('ip_address', db.String(15), unique=True, nullable=False)
+    name = db.Column('name', db.String(50), nullable=True)  # Added name field
 
     def __repr__(self):
         return f'<Server {self.ip_address}>'
@@ -47,12 +48,12 @@ class Server(db.Model):
 # ✅ User Model (for Authentication)
 class User(db.Model):
     __tablename__ = 'user'
-    
+
     u_id = db.Column('u_id', db.Integer, primary_key=True, autoincrement=True)
     username = db.Column('username', db.Text, nullable=False)
     password = db.Column('password', db.Text, nullable=False)
     role = db.Column('role', db.Text, nullable=False)
-    
+
     __table_args__ = (
         UniqueConstraint('username', name='uq_user_username'),
     )
@@ -70,7 +71,7 @@ class User(db.Model):
 
 class Threshold(db.Model):
     __tablename__ = 'thresholds'
-    
+
     id = db.Column('id', db.Integer, primary_key=True)
     server_ip = db.Column('server_ip', db.String(45), unique=True, nullable=False)
     cpu_threshold = db.Column('cpu_threshold', db.Float, default=80)

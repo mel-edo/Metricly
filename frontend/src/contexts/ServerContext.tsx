@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { getServers, ServerInfo, removeDuplicateLocalhostEntries, updateServerName as updateServerNameApi } from '../services/servers';
+import { getServers, ServerInfo, updateServerName as updateServerNameApi } from '../services/servers';
 import { useAuth } from './AuthContext';
+import { toast } from '../hooks/use-toast';
 
 interface ServerContextType {
   servers: ServerInfo[];
@@ -56,12 +57,29 @@ export const ServerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   // Function to update server name
   const updateServerName = async (serverId: string, newName: string): Promise<void> => {
     try {
-      // Try to call the API to update the server name
-      // If the API doesn't support this, it will return a mock response
-      await updateServerNameApi(serverId, newName);
+      console.log('Updating server name:', serverId, newName);
+      console.log('Available servers:', servers);
 
-      // Update the servers list with the updated server name
+      // The serverId could be either the IP address or the server ID
+      // First try to find by IP address
+      let server = servers.find(s => s.ip_address === serverId);
+
+      // If not found, it might be the server ID from the UI
+      if (!server) {
+        console.log('Server not found by IP address, trying to find by ID');
+        // In this case, we need to use the serverId directly
+        await updateServerNameApi(serverId, newName);
+      } else {
+        // Call the API to update the server name using IP address
+        await updateServerNameApi(server.ip_address, newName);
+      }
+
+      // After successful update, refresh the servers list
+      await fetchServers();
+
+      // Also update the local state for immediate feedback
       const updatedServers = servers.map(server => {
+        // Match by IP address or by the fact that this is the only server with this name
         if (server.ip_address === serverId) {
           return { ...server, name: newName };
         }
@@ -105,7 +123,9 @@ export const ServerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
     try {
       // Try to get servers from the API
+      console.log('Fetching servers...');
       let serverList = await getServers();
+      console.log('Servers fetched successfully:', serverList);
 
       // Remove duplicate localhost/127.0.0.1 entries
       const uniqueServers = removeDuplicateLocalhost(serverList);
@@ -161,10 +181,26 @@ export const ServerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         setServers([localhost]);
       }
 
-      // Only show error if it's not a token expiration issue
-      const errorMsg = err instanceof Error ? err.message : 'Failed to fetch servers';
-      if (!errorMsg.includes('Token expired')) {
-        setError(errorMsg);
+      // Handle network errors gracefully
+      if (err instanceof TypeError) {
+        console.warn('Network error detected, using local mode');
+        // Don't show error to user, just use localhost
+        toast({
+          title: 'Network Error',
+          description: 'Could not connect to the server. Using local mode.',
+          variant: 'default',
+        });
+      } else {
+        // Only show error if it's not a token expiration issue
+        const errorMsg = err instanceof Error ? err.message : 'Failed to fetch servers';
+        if (!errorMsg.includes('Token expired')) {
+          setError(errorMsg);
+          toast({
+            title: 'Error',
+            description: errorMsg,
+            variant: 'destructive',
+          });
+        }
       }
     } finally {
       setLoading(false);
@@ -173,21 +209,8 @@ export const ServerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   useEffect(() => {
     if (isLoggedIn) {
-      // Remove duplicate localhost entries and then fetch servers
-      const init = async () => {
-        try {
-          // First try to remove any duplicate localhost entries
-          await removeDuplicateLocalhostEntries();
-          // Then fetch the updated server list
-          await fetchServers();
-        } catch (error) {
-          console.error('Error initializing servers:', error);
-          // Still try to fetch servers even if removing duplicates fails
-          fetchServers();
-        }
-      };
-
-      init();
+      // Fetch servers when logged in
+      fetchServers();
     }
   }, [isLoggedIn]);
 

@@ -1,5 +1,9 @@
 // Base API configuration
-const API_URL = 'http://localhost:5000/api';
+// Using relative URL to work with the Vite proxy
+const API_URL = '/api';
+
+// For development, the Vite proxy will forward requests to the backend
+// This avoids CORS issues during development
 
 // Helper function to handle API responses
 const handleResponse = async (response: Response) => {
@@ -44,10 +48,17 @@ const authenticatedRequest = async (
     ...options.headers,
   };
 
-  return fetch(`${API_URL}${endpoint}`, {
-    ...options,
-    headers,
-  }).then(handleResponse);
+  try {
+    const response = await fetch(`${API_URL}${endpoint}`, {
+      ...options,
+      headers
+    });
+    return handleResponse(response);
+  } catch (error) {
+    // Handle network errors (e.g., server not running)
+    console.error('Network error:', error);
+    throw error;
+  }
 };
 
 // Public API request (no authentication)
@@ -60,10 +71,17 @@ const publicRequest = async (
     ...options.headers,
   };
 
-  return fetch(`${API_URL}${endpoint}`, {
-    ...options,
-    headers,
-  }).then(handleResponse);
+  try {
+    const response = await fetch(`${API_URL}${endpoint}`, {
+      ...options,
+      headers
+    });
+    return handleResponse(response);
+  } catch (error) {
+    // Handle network errors (e.g., server not running)
+    console.error('Network error in public request:', error);
+    throw error;
+  }
 };
 
 export { API_URL, authenticatedRequest, publicRequest, getToken };

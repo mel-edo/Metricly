@@ -57,7 +57,7 @@ export function ContainerMetricsChart({ data, containerName }: ContainerMetricsC
       <div className="flex justify-between items-center mb-4">
         <h3 className="text-sm font-medium flex items-center">
           <Clock size={16} className="mr-2" />
-          {containerName} Metrics
+          {containerName} metrics
         </h3>
         <div className="flex space-x-2">
           <Button

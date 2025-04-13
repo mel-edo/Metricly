@@ -56,6 +56,7 @@ export function AddServerDialog() {
 
     if (serverExists) {
       toast.error(`Server with IP address ${normalizedAddress} already exists`);
+      toast.info('You can manage your servers in the Servers page');
       return;
     }
 

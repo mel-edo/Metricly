@@ -71,30 +71,8 @@ const updateServerName = async (ipAddress: string, name: string): Promise<Server
   }
 };
 
-// Remove duplicate localhost entries
-const removeDuplicateLocalhostEntries = async (): Promise<void> => {
-  try {
-    // Get all servers
-    const servers = await getServers();
-
-    // Find all localhost/127.0.0.1 entries
-    const localhostServers = servers.filter(server => {
-      const ip = server.ip_address.split(':')[0];
-      return ip === '127.0.0.1' || ip === 'localhost';
-    });
-
-    // If we have more than one localhost entry, keep only the first one
-    if (localhostServers.length > 1) {
-      // Keep the first one and delete the rest
-      for (let i = 1; i < localhostServers.length; i++) {
-        await deleteServer(localhostServers[i].ip_address);
-      }
-    }
-  } catch (error) {
-    console.error('Error removing duplicate localhost entries:', error);
-    throw error;
-  }
-};
+// This function was removed as it's no longer needed
+// Users can now manage their servers manually
 
 // Get server metrics
 const getServerMetrics = async (ipAddress: string, timeRange: string = '1h'): Promise<ServerMetrics[]> => {
@@ -129,7 +107,6 @@ export {
   addServer,
   deleteServer,
   updateServerName,
-  removeDuplicateLocalhostEntries,
   getServerMetrics,
   getCurrentSystemMetrics,
   getServerThresholds,

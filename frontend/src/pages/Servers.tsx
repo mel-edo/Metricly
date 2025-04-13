@@ -64,7 +64,8 @@ const EditServerDialog = ({ server, isOpen, onClose, onSave }: EditServerDialogP
   const [serverName, setServerName] = useState(server?.name || '');
 
   const handleSave = () => {
-    onSave(server.id, serverName);
+    // Pass the server IP instead of the ID
+    onSave(server.ip, serverName);
     onClose();
   };
 
@@ -243,8 +244,7 @@ const ServersPage = () => {
   // Handle save edited server
   const handleSaveServer = async (serverId: string, newName: string) => {
     try {
-      // In a real implementation, you would call an API to update the server name
-      // For now, we'll just update it locally
+      // Call the API to update the server name
       await updateServerName(serverId, newName);
 
       toast({
@@ -254,12 +254,26 @@ const ServersPage = () => {
 
       // Refresh the server list
       await refreshServers();
+
+      // Close any open dialogs
+      setEditingServer(null);
     } catch (err) {
-      toast({
-        title: "Error updating server",
-        description: err instanceof Error ? err.message : 'Unknown error',
-        variant: "destructive"
-      });
+      console.error('Error updating server name:', err);
+
+      // Handle network errors gracefully
+      if (err instanceof TypeError && err.message.includes('NetworkError')) {
+        toast({
+          title: "Network Error",
+          description: "Could not connect to the server. Please check if the backend is running.",
+          variant: "destructive"
+        });
+      } else {
+        toast({
+          title: "Error updating server",
+          description: err instanceof Error ? err.message : 'Unknown error',
+          variant: "destructive"
+        });
+      }
     }
   };
 
@@ -274,7 +288,14 @@ const ServersPage = () => {
   // Handle confirm delete server
   const handleConfirmDelete = async (serverId: string) => {
     try {
-      await deleteServer(serverId);
+      // Find the server to get its IP address
+      const server = servers.find(s => s.id === serverId);
+      if (!server) {
+        throw new Error('Server not found');
+      }
+
+      // Delete server using IP address
+      await deleteServer(server.ip);
 
       toast({
         title: "Server deleted",
@@ -287,11 +308,25 @@ const ServersPage = () => {
       // Close the dialog
       setDeletingServer(null);
     } catch (err) {
-      toast({
-        title: "Error deleting server",
-        description: err instanceof Error ? err.message : 'Unknown error',
-        variant: "destructive"
-      });
+      console.error('Error deleting server:', err);
+
+      // Handle network errors gracefully
+      if (err instanceof TypeError && err.message.includes('NetworkError')) {
+        toast({
+          title: "Network Error",
+          description: "Could not connect to the server. Please check if the backend is running.",
+          variant: "destructive"
+        });
+      } else {
+        toast({
+          title: "Error deleting server",
+          description: err instanceof Error ? err.message : 'Unknown error',
+          variant: "destructive"
+        });
+      }
+
+      // Close the dialog anyway
+      setDeletingServer(null);
     }
   };
 
@@ -473,7 +508,7 @@ const ServersPage = () => {
           onSave={handleSaveServer}
         />
       )}
-      
+
       {/* Confirm Delete Dialog */}
       {deletingServer && (
         <ConfirmDeleteDialog

@@ -51,9 +51,8 @@ Metricly is a modern, real-time monitoring dashboard for Docker containers and s
 - Make container actions work properly
 - Fetch actual metrics for the network tab
 - figure out the actual logic behind container's healthy status
-- Add detailed container view when clicking from dashboard, maybe route to container tab in sidebar
+- make both metric charts uniform
 - Define and implement the connections tab functionality
-- make it so that changing the name of the server changes it everywhere - edit server function
 - remove (system metrics, history, connections) tab from sidebar as they don't serve any purpose (i think)
 
 ### Backend Integration
