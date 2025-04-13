@@ -143,15 +143,15 @@ const ConfirmDeleteDialog = ({ server, isOpen, onClose, onConfirm }: ConfirmDele
             Delete Server
           </DialogTitle>
           <DialogDescription>
-            Are you sure you want to delete this server?
+            Are you sure you want to remove this server?
           </DialogDescription>
         </DialogHeader>
 
         <div className="mt-4 space-y-4">
           <div className="p-3 bg-metricly-error/10 border border-metricly-error/30 rounded-md">
             <p className="text-sm text-metricly-error">
-              This action cannot be undone. This will permanently delete the server
-              <strong> {server?.name} ({server?.ip})</strong> from your account.
+              This action cannot be undone. This will remove the server
+              <strong> {server?.name} ({server?.ip})</strong> from being monitored.
             </p>
           </div>
         </div>

@@ -7,8 +7,6 @@ import {
   LayoutDashboard,
   Server,
   Box,
-  Activity,
-  History,
   Settings,
   LogOut,
   Plus,
@@ -16,7 +14,6 @@ import {
   PanelLeftClose,
   Sun,
   Moon,
-  Cable,
   Network,
   ServerCrash
 } from "lucide-react";
@@ -142,30 +139,14 @@ const Sidebar = () => {
                   active={activePage === "containers"}
                   onClick={() => handleNavigation("containers")}
                 />
-                <NavItem
-                  icon={<Activity size={18} />}
-                  label="System Metrics"
-                  active={activePage === "metrics"}
-                  onClick={() => handleNavigation("metrics")}
-                />
-                <NavItem
-                  icon={<History size={18} />}
-                  label="History"
-                  active={activePage === "history"}
-                  onClick={() => handleNavigation("history")}
-                />
+
                 <NavItem
                   icon={<Network size={18} />}
                   label="Network"
                   active={activePage === "network"}
                   onClick={() => handleNavigation("network")}
                 />
-                <NavItem
-                  icon={<Cable size={18} />}
-                  label="Connections"
-                  active={activePage === "connections"}
-                  onClick={() => handleNavigation("connections")}
-                />
+
                 <NavItem
                   icon={<Settings size={18} />}
                   label="Settings"
@@ -214,32 +195,7 @@ const Sidebar = () => {
                     <Box size={20} />
                   </Button>
                 </li>
-                <li className="mb-1">
-                  <Button
-                    variant="ghost"
-                    className={`w-full justify-center ${
-                      activePage === "metrics"
-                        ? "bg-metricly-accent/10 text-metricly-accent"
-                        : "hover:bg-metricly-secondary/70 text-gray-300 hover:text-white"
-                    }`}
-                    onClick={() => handleNavigation("metrics")}
-                  >
-                    <Activity size={20} />
-                  </Button>
-                </li>
-                <li className="mb-1">
-                  <Button
-                    variant="ghost"
-                    className={`w-full justify-center ${
-                      activePage === "history"
-                        ? "bg-metricly-accent/10 text-metricly-accent"
-                        : "hover:bg-metricly-secondary/70 text-gray-300 hover:text-white"
-                    }`}
-                    onClick={() => handleNavigation("history")}
-                  >
-                    <History size={20} />
-                  </Button>
-                </li>
+
                 <li className="mb-1">
                   <Button
                     variant="ghost"
@@ -253,19 +209,7 @@ const Sidebar = () => {
                     <Network size={20} />
                   </Button>
                 </li>
-                <li className="mb-1">
-                  <Button
-                    variant="ghost"
-                    className={`w-full justify-center ${
-                      activePage === "connections"
-                        ? "bg-metricly-accent/10 text-metricly-accent"
-                        : "hover:bg-metricly-secondary/70 text-gray-300 hover:text-white"
-                    }`}
-                    onClick={() => handleNavigation("connections")}
-                  >
-                    <Cable size={20} />
-                  </Button>
-                </li>
+
                 <li className="mb-1">
                   <Button
                     variant="ghost"

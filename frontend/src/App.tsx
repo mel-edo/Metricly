@@ -10,7 +10,7 @@ import Dashboard from "./pages/Dashboard";
 import NotFound from "./pages/NotFound";
 import ServersPage from "./pages/Servers";
 import NetworkPage from "./pages/Network";
-import ConnectionsPage from "./pages/Connections";
+
 import ContainersPage from "./pages/Containers";
 import { AddServerDialog } from "./components/AddServerDialog";
 import { SwitchServerDialog } from "./components/SwitchServerDialog";
@@ -56,7 +56,7 @@ const AppContent = () => {
               <Route path="dashboard" element={<Dashboard />} />
               <Route path="servers" element={<ServersPage />} />
               <Route path="network" element={<NetworkPage />} />
-              <Route path="connections" element={<ConnectionsPage />} />
+
               <Route path="containers" element={<ContainersPage />} />
             </Route>
             <Route path="*" element={<NotFound />} />
