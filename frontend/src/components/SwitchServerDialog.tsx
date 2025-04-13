@@ -65,7 +65,7 @@ export function SwitchServerDialog() {
                     ? 'bg-metricly-accent/10 border border-metricly-accent/30'
                     : 'bg-metricly-background hover:bg-metricly-background/80 border border-transparent'
                 }`}
-                onClick={() => activeServer && server.ip_address !== activeServer.ip_address && handleServerSelect(server)}
+                onClick={() => handleServerSelect(server)}
               >
                 <div className="flex items-center gap-3">
                   <ServerIcon
