@@ -19,11 +19,8 @@ const formatMetricsData = (metricsData: Record<string, any[]>, containerId: stri
   const containerName = containerOptions.find(option => option.value === containerId)?.label;
 
   if (!containerName || !metricsData || !metricsData[containerName] || !metricsData[containerName].length) {
-    console.log(`No metrics data found for container ${containerName || containerId}`, metricsData);
     return [];
   }
-
-  console.log(`Found ${metricsData[containerName].length} metrics for ${containerName}`);
 
   return metricsData[containerName].map(metric => ({
     time: new Date(metric.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
@@ -57,9 +54,7 @@ const ContainersPage = () => {
   const { data: metricsData, isLoading: isLoadingMetrics, error: metricsError } = useQuery({
     queryKey: ['containerMetrics', serverIp, selectedContainer, timeRange],
     queryFn: async () => {
-      console.log(`Fetching metrics for server ${serverIp} with time range ${timeRange}`);
       const data = await getContainerMetricsHistory(serverIp, timeRange);
-      console.log('Received metrics data:', data);
       return data;
     },
     enabled: !!selectedContainer,
@@ -91,7 +86,6 @@ const ContainersPage = () => {
 
   // Handle container selection change
   const handleContainerChange = (containerId: string) => {
-    console.log('Container selected:', containerId);
     setSelectedContainer(containerId);
   };
 
@@ -111,8 +105,7 @@ const ContainersPage = () => {
   const containerCounts = {
     total: containerData?.length || 0,
     running: containerData?.filter(c => c.status === 'running').length || 0,
-    paused: containerData?.filter(c => c.status === 'paused').length || 0,
-    stopped: containerData?.filter(c => c.status === 'stopped' || c.status === 'error').length || 0
+    stopped: containerData?.filter(c => c.status !== 'running').length || 0
   };
 
   return (
@@ -130,7 +123,7 @@ const ContainersPage = () => {
       </div>
 
       {/* Container Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card>
           <CardHeader className="py-4">
             <CardTitle className="text-base flex justify-between text-text">
@@ -144,14 +137,6 @@ const ContainersPage = () => {
             <CardTitle className="text-base flex justify-between text-metricly-success">
               <span>Running</span>
               <span>{containerCounts.running}</span>
-            </CardTitle>
-          </CardHeader>
-        </Card>
-        <Card>
-          <CardHeader className="py-4">
-            <CardTitle className="text-base flex justify-between text-metricly-warning">
-              <span>Paused</span>
-              <span>{containerCounts.paused}</span>
             </CardTitle>
           </CardHeader>
         </Card>

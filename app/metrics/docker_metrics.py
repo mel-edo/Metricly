@@ -36,21 +36,21 @@ def get_uptime(container_info):
         if not created:
             print("No creation time found in container info")
             return 'Unknown'
-        
+
         # Parse the creation time
         # Docker API returns ISO format with 'Z' suffix
         created_time = datetime.fromisoformat(created.replace('Z', '+00:00'))
         current_time = datetime.now(created_time.tzinfo)
-        
+
         # Calculate uptime
         uptime = current_time - created_time
-        
+
         # Convert to human-readable format
         days = uptime.days
         hours = uptime.seconds // 3600
         minutes = (uptime.seconds % 3600) // 60
         seconds = uptime.seconds % 60
-        
+
         if days > 0:
             return f"{days}d {hours}h {minutes}m"
         elif hours > 0:
@@ -66,19 +66,37 @@ def get_uptime(container_info):
 
 def get_docker_metrics():
     container_metrics = []
-    for container in client.containers.list():
+    # Use all=True to include all containers, not just running ones
+    for container in client.containers.list(all=True):
         try:
-            stats = container.stats(stream=False)
-            
             # Get container details
             container_info = container.attrs
             print(f"\nProcessing container: {container.name}")
-            print(f"Container info: {container_info}")
-            
+            print(f"Container status: {container.status}")
+
             # Calculate uptime
             uptime = get_uptime(container_info)
             print(f"Calculated uptime: {uptime}")
-            
+
+            # For stopped containers, stats might not be available
+            # Use empty stats for stopped containers
+            if container.status != 'running':
+                stats = {
+                    'cpu_stats': {'cpu_usage': {'total_usage': 0}, 'system_cpu_usage': 1},
+                    'memory_stats': {'usage': 0, 'limit': 0},
+                    'networks': {}
+                }
+            else:
+                try:
+                    stats = container.stats(stream=False)
+                except Exception as e:
+                    print(f"Error getting stats for container {container.name}: {str(e)}")
+                    stats = {
+                        'cpu_stats': {'cpu_usage': {'total_usage': 0}, 'system_cpu_usage': 1},
+                        'memory_stats': {'usage': 0, 'limit': 0},
+                        'networks': {}
+                    }
+
             # Get network stats
             networks = stats.get('networks', {})
             network_stats = {}
@@ -98,17 +116,17 @@ def get_docker_metrics():
             volumes = []
             mounts = container_info.get('Mounts', [])
             print(f"Found {len(mounts)} mounts for container {container.name}")
-            
+
             for mount in mounts:
                 try:
                     print(f"\nProcessing mount for {container.name}:")
                     print(f"Mount details: {mount}")
-                    
+
                     # Get volume size
                     volume_size = 0
                     mount_type = mount.get('Type', '')
                     source = mount.get('Source', '')
-                    
+
                     if mount_type == 'bind' and source:
                         print(f"Calculating size for bind mount: {source}")
                         volume_size = get_directory_size(source)

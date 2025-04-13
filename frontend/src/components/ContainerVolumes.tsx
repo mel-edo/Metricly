@@ -88,9 +88,6 @@ export function ContainerVolumes() {
                     <Database className="mr-2 h-4 w-4 text-metricly-accent" />
                     {container.name}
                   </CardTitle>
-                  <Badge className={`${container.status === 'running' ? 'bg-metricly-success/20 text-metricly-success' : 'bg-metricly-error/20 text-metricly-error'}`}>
-                    {container.status}
-                  </Badge>
                 </div>
                 <p className="text-xs text-muted-foreground truncate max-w-[300px]">{container.image}</p>
               </CardHeader>
@@ -98,7 +95,7 @@ export function ContainerVolumes() {
                 <div className="space-y-2">
                   <h4 className="text-xs font-medium flex items-center">
                     <HardDrive className="h-3.5 w-3.5 text-metricly-accent mr-1.5" />
-                    Mounted Volumes ({container.volumes.length})
+                    Mounted Volumes
                   </h4>
                   <div className="bg-metricly-background/30 rounded-md p-2 space-y-2 max-h-[200px] overflow-y-auto">
                     {container.volumes.map((volume, index) => (

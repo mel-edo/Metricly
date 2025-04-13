@@ -2,18 +2,18 @@ import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { ProgressBar } from "./ProgressBar";
 import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
-import { Terminal, RefreshCw, Play, Pause, Trash2, Edit, CheckCircle, AlertTriangle, XCircle, AlertCircle, ExternalLink, Pencil } from "lucide-react";
+import { Terminal, RefreshCw, Play, Pause, Trash2, CheckCircle, AlertTriangle, XCircle, AlertCircle, ExternalLink, Pencil } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "./ui/tooltip";
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "./ui/dialog";
 import { Input } from "./ui/input";
 import { toast } from "sonner";
-import { getContainerLogs } from "../services/containers";
+import { getContainerLogs, containerAction } from "../services/containers";
 import { useServer } from "../contexts/ServerContext";
 interface ContainerCardProps {
   id: string;
   name: string;
-  status: "running" | "stopped" | "paused" | "error";
+  status: "running" | "stopped" | "paused" | "error" | "exited";
   cpu: {
     usage: number;
     limit?: number;
@@ -23,6 +23,7 @@ interface ContainerCardProps {
     limit: number;
   };
   image: string;
+  uptime: string;
   ports?: {
     container: string;
     host: string;
@@ -36,6 +37,7 @@ export function ContainerCard({
   cpu,
   memory,
   image,
+  uptime,
   ports,
   onAction
 }: ContainerCardProps) {
@@ -51,6 +53,10 @@ export function ContainerCard({
   const [logs, setLogs] = useState<string>("");
   const [isLoadingLogs, setIsLoadingLogs] = useState(false);
   const [logsError, setLogsError] = useState<string | null>(null);
+
+  // References for logs container and interval
+  const logsContainerRef = useRef<HTMLPreElement>(null);
+  const refreshIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // State to store the custom URL for this container
   const storageKey = `container-${id}-custom-url`;
@@ -193,13 +199,41 @@ export function ContainerCard({
   };
   const statusColors = {
     running: "bg-metricly-success text-metricly-background",
-    stopped: "bg-gray-500 text-white",
+    stopped: "bg-metricly-error text-white",
     paused: "bg-metricly-warning text-metricly-background",
-    error: "bg-metricly-error text-white"
+    error: "bg-metricly-error text-white",
+    exited: "bg-metricly-error text-white"
   };
-  const handleAction = (action: string) => {
+
+  // Normalize status for display
+  const displayStatus = status === 'exited' ? 'stopped' : status;
+  // Handle container actions
+  const handleAction = async (action: 'start' | 'stop' | 'restart' | 'delete') => {
     if (onAction) {
+      // Use the parent component's handler if provided
       onAction(action, id);
+    } else {
+      // Otherwise handle the action directly
+      if (action === 'delete') {
+        // Delete is not implemented directly here
+        console.log(`Delete action on container ${name} not implemented directly`);
+        return;
+      }
+
+      try {
+        // Show loading toast
+        toast.loading(`${action.charAt(0).toUpperCase() + action.slice(1)}ing container...`);
+
+        // Call the API to perform the action
+        const result = await containerAction(name, action, serverIp);
+
+        // Show success toast
+        toast.success(result.message || `Container ${action}ed successfully`);
+      } catch (error) {
+        // Show error toast
+        toast.error(`Failed to ${action} container: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        console.error(`Error ${action}ing container:`, error);
+      }
     }
   };
 
@@ -212,7 +246,7 @@ export function ContainerCard({
         <DialogHeader>
           <DialogTitle className="flex items-center">
             <Terminal className="mr-2 h-4 w-4" />
-            {name} Logs
+            {name} logs
           </DialogTitle>
           <DialogDescription>
             Container logs for {name}
@@ -230,42 +264,62 @@ export function ContainerCard({
               <p className="text-sm text-metricly-error/80 mt-1">{logsError}</p>
             </div>
           ) : (
-            <pre className="bg-metricly-background/80 border border-metricly-secondary/30 rounded-md p-4 text-xs font-mono overflow-auto h-full whitespace-pre-wrap">
+            <pre
+              ref={logsContainerRef}
+              className="bg-metricly-background/80 border border-metricly-secondary/30 rounded-md p-4 text-xs font-mono overflow-auto h-full whitespace-pre-wrap scroll-smooth"
+            >
               {logs || 'No logs available for this container'}
             </pre>
           )}
         </div>
         <DialogFooter className="mt-4">
-          <Button
-            variant="outline"
-            onClick={() => {
-              setIsTerminalOpen(false);
-              setLogs('');
-            }}
-          >
-            Close
-          </Button>
-          <Button
-            onClick={() => {
-              setIsLoadingLogs(true);
-              setLogsError(null);
+          <div className="flex space-x-2 ml-auto">
+            <Button
+              variant="outline"
+              onClick={() => {
+                // Clear auto-refresh interval when closing
+                if (refreshIntervalRef.current !== null) {
+                  clearInterval(refreshIntervalRef.current);
+                  refreshIntervalRef.current = null;
+                }
+                setIsTerminalOpen(false);
+                setLogs('');
+              }}
+            >
+              Close
+            </Button>
+            <Button
+              onClick={() => {
+                setIsLoadingLogs(true);
+                setLogsError(null);
 
-              // Refresh logs
-              getContainerLogs(name, serverIp)
-                .then(response => {
-                  setLogs(response.logs || 'No logs available');
-                })
-                .catch(error => {
-                  console.error('Error fetching logs:', error);
-                  setLogsError(error instanceof Error ? error.message : 'Failed to fetch logs');
-                })
-                .finally(() => {
-                  setIsLoadingLogs(false);
-                });
-            }}
-          >
-            Refresh Logs
-          </Button>
+                // Refresh logs
+                getContainerLogs(name, serverIp)
+                  .then(response => {
+                    setLogs(response.logs || 'No logs available');
+                    // Schedule smooth scroll to bottom after state update and render
+                    setTimeout(() => {
+                      if (logsContainerRef.current) {
+                        logsContainerRef.current.scrollTo({
+                          top: logsContainerRef.current.scrollHeight,
+                          behavior: 'smooth'
+                        });
+                      }
+                    }, 50);
+                  })
+                  .catch(error => {
+                    console.error('Error fetching logs:', error);
+                    setLogsError(error instanceof Error ? error.message : 'Failed to fetch logs');
+                  })
+                  .finally(() => {
+                    setIsLoadingLogs(false);
+                  });
+              }}
+              disabled={isLoadingLogs}
+            >
+              {isLoadingLogs ? 'Refreshing...' : 'Refresh Logs'}
+            </Button>
+          </div>
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -327,10 +381,16 @@ export function ContainerCard({
             {name}
           </CardTitle>
           <Badge className={`${statusColors[status]}`}>
-            {status}
+            {displayStatus}
           </Badge>
         </div>
-        <p className="text-xs text-muted-foreground truncate max-w-[300px]">{image}</p>
+        <div className="flex flex-col space-y-1">
+          <p className="text-xs text-muted-foreground truncate max-w-[300px]">{image}</p>
+          <div className="flex items-center text-xs text-muted-foreground">
+            <span className="mr-1">Uptime:</span>
+            <span className="font-mono">{status === "running" ? uptime : "Not running"}</span>
+          </div>
+        </div>
       </CardHeader>
       <CardContent className="pb-4 space-y-4 flex-1">
         {/* Health Status Indicator */}
@@ -363,17 +423,17 @@ export function ContainerCard({
                   <p>Resume to restore functionality</p>
                 </TooltipContent>
               </Tooltip>
-            ) : status === "error" ? (
+            ) : status === "error" || status === "exited" ? (
               <Tooltip>
                 <TooltipTrigger asChild>
                   <div className="flex items-center text-red cursor-help">
                     <AlertCircle className="h-4 w-4 mr-1" />
-                    <span className="text-xs">Error</span>
+                    <span className="text-xs">Stopped</span>
                   </div>
                 </TooltipTrigger>
                 <TooltipContent>
-                  <p>Container has encountered an error</p>
-                  <p>Check logs for more information</p>
+                  <p>Container is stopped</p>
+                  <p>Start the container to resume services</p>
                 </TooltipContent>
               </Tooltip>
             ) : (
@@ -393,19 +453,30 @@ export function ContainerCard({
           </TooltipProvider>
         </div>
 
-        <div className="space-y-2">
-          <div className="flex justify-between text-xs text-muted-foreground">
-            <span>CPU Usage</span>
-            <span>{cpu.usage}%</span>
-          </div>
-          <ProgressBar value={cpu.usage} max={100} size="sm" />
+        {status === "running" ? (
+          <div className="space-y-2">
+            <div className="flex justify-between text-xs text-muted-foreground">
+              <span>CPU Usage</span>
+              <span>{cpu.usage}%</span>
+            </div>
+            <ProgressBar value={cpu.usage} max={100} size="sm" />
 
-          <div className="flex justify-between text-xs text-muted-foreground mt-3">
-            <span>Memory</span>
-            <span>{Math.round(memory.usage / 1024 / 1024 * 10) / 10} MB / {Math.round(memory.limit / 1024 / 1024 * 10) / 10} GB</span>
+            <div className="flex justify-between text-xs text-muted-foreground mt-3">
+              <span>Memory</span>
+              <span>{Math.round(memory.usage / 1024 / 1024 * 10) / 10} MB / {Math.round(memory.limit / 1024 / 1024 * 10) / 10} GB</span>
+            </div>
+            <ProgressBar value={memory.usage} max={memory.limit} size="sm" />
           </div>
-          <ProgressBar value={memory.usage} max={memory.limit} size="sm" />
-        </div>
+        ) : (
+          <div className="bg-metricly-background/30 rounded-md p-3 text-center">
+            <p className="text-xs text-muted-foreground">
+              Resource usage metrics are not available while the container is stopped.
+            </p>
+            <p className="text-xs text-muted-foreground mt-1">
+              Start the container to view CPU and memory usage.
+            </p>
+          </div>
+        )}
 
         {ports && ports.length > 0 && <div className="bg-metricly-background/30 rounded-md p-2 mt-2">
             <h4 className="text-xs font-medium mb-1">Ports</h4>
@@ -496,6 +567,42 @@ export function ContainerCard({
                     getContainerLogs(name, serverIp)
                       .then(response => {
                         setLogs(response.logs || 'No logs available');
+                        // Schedule smooth scroll to bottom after state update and render
+                        setTimeout(() => {
+                          if (logsContainerRef.current) {
+                            logsContainerRef.current.scrollTo({
+                              top: logsContainerRef.current.scrollHeight,
+                              behavior: 'smooth'
+                            });
+                          }
+                        }, 50);
+
+                        // Start auto-refresh interval
+                        const interval = setInterval(() => {
+                          if (!document.hidden) { // Only refresh if page is visible
+                            getContainerLogs(name, serverIp)
+                              .then(response => {
+                                setLogs(response.logs || 'No logs available');
+                                // Scroll to bottom if we're already near the bottom
+                                if (logsContainerRef.current) {
+                                  const { scrollTop, scrollHeight, clientHeight } = logsContainerRef.current;
+                                  const isNearBottom = scrollHeight - scrollTop - clientHeight < 100;
+                                  if (isNearBottom) {
+                                    logsContainerRef.current.scrollTo({
+                                      top: logsContainerRef.current.scrollHeight,
+                                      behavior: 'smooth'
+                                    });
+                                  }
+                                }
+                              })
+                              .catch(error => {
+                                console.error('Error auto-refreshing logs:', error);
+                              });
+                          }
+                        }, 3000); // Refresh every 3 seconds
+
+                        // Store interval ID in ref
+                        refreshIntervalRef.current = interval;
                       })
                       .catch(error => {
                         console.error('Error fetching logs:', error);
@@ -516,7 +623,16 @@ export function ContainerCard({
 
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button variant="outline" size="icon" className="h-8 w-8 hover:text-metricly-accent hover:border-metricly-accent hover:bg-metricly-accent/10" onClick={() => handleAction('restart')}>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-8 w-8 hover:text-metricly-accent hover:border-metricly-accent hover:bg-metricly-accent/10"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    e.preventDefault();
+                    handleAction('restart');
+                  }}
+                >
                   <RefreshCw className="h-4 w-4" />
                 </Button>
               </TooltipTrigger>
@@ -527,23 +643,21 @@ export function ContainerCard({
 
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button variant="outline" size="icon" className="h-8 w-8 hover:text-metricly-accent hover:border-metricly-accent hover:bg-metricly-accent/10" onClick={() => handleAction(status === 'running' ? 'stop' : 'start')}>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-8 w-8 hover:text-metricly-accent hover:border-metricly-accent hover:bg-metricly-accent/10"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    e.preventDefault();
+                    handleAction(status === 'running' ? 'stop' : 'start');
+                  }}
+                >
                   {status === 'running' ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
                 </Button>
               </TooltipTrigger>
               <TooltipContent>
                 <p>{status === 'running' ? 'Stop' : 'Start'}</p>
-              </TooltipContent>
-            </Tooltip>
-
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button variant="outline" size="icon" className="h-8 w-8 hover:text-metricly-accent hover:border-metricly-accent hover:bg-metricly-accent/10" onClick={() => handleAction('edit')}>
-                  <Edit className="h-4 w-4" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Edit</p>
               </TooltipContent>
             </Tooltip>
 

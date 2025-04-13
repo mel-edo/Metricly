@@ -11,7 +11,7 @@ import { useQuery } from '@tanstack/react-query';
 interface Container {
   id: string;
   name: string;
-  status: "running" | "stopped" | "paused" | "error";
+  status: "running" | "stopped" | "paused" | "error" | "exited";
   cpu: {
     usage: number;
     limit?: number;
@@ -21,6 +21,7 @@ interface Container {
     limit: number;
   };
   image: string;
+  uptime: string;
   ports?: {
     container: string;
     host: string;
@@ -82,7 +83,7 @@ export function ContainerOverview() {
     return {
       id: container.id,
       name: container.name,
-      status: container.status as "running" | "stopped" | "paused" | "error",
+      status: container.status as "running" | "stopped" | "paused" | "error" | "exited",
       cpu: {
         usage: container.cpu_percent
       },
@@ -91,6 +92,7 @@ export function ContainerOverview() {
         limit: parseMemory(container.memory_limit)
       },
       image: container.image,
+      uptime: container.uptime || 'N/A',
       ports: parsePorts()
     };
   }) : [];
@@ -187,6 +189,7 @@ export function ContainerOverview() {
               cpu={container.cpu}
               memory={container.memory}
               image={container.image}
+              uptime={container.uptime}
               ports={container.ports}
               onAction={handleContainerAction}
             />
