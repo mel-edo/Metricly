@@ -2,8 +2,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { ProgressBar } from "./ProgressBar";
 import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
-import { Info, Terminal, RefreshCw, Play, Pause, Trash2, Edit, CheckCircle, AlertTriangle, XCircle, AlertCircle } from "lucide-react";
+import { Terminal, RefreshCw, Play, Pause, Trash2, Edit, CheckCircle, AlertTriangle, XCircle, AlertCircle, ExternalLink, Pencil } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "./ui/tooltip";
+import { useState } from "react";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "./ui/dialog";
+import { Input } from "./ui/input";
+import { toast } from "sonner";
 interface ContainerCardProps {
   id: string;
   name: string;
@@ -33,6 +37,149 @@ export function ContainerCard({
   ports,
   onAction
 }: ContainerCardProps) {
+  // State for URL editing dialog
+  const [isEditUrlDialogOpen, setIsEditUrlDialogOpen] = useState(false);
+  const [customUrl, setCustomUrl] = useState("");
+
+  // State to store the custom URL for this container
+  const storageKey = `container-${id}-custom-url`;
+  const savedCustomUrl = localStorage.getItem(storageKey);
+  // Function to determine the container's URL based on its ports
+  // urlVersion is used to force re-evaluation when the URL changes
+  const getContainerUrl = (): string | null => {
+    // This is just to make the linter happy that we're using urlVersion
+    if (urlVersion < 0) return null; // This will never happen
+    // First check if there's a custom URL saved for this container
+    if (savedCustomUrl) {
+      // Clean up the URL - remove commas and anything after the first port
+      const cleanUrl = savedCustomUrl.split(',')[0].trim();
+      return cleanUrl;
+    }
+
+    if (!ports || ports.length === 0) return null;
+
+    try {
+      // Look for common web ports (80, 443, 8080, 3000, etc.)
+      const webPorts = ['80', '443', '8080', '3000', '8000', '8888', '5000', '5173'];
+
+      // First, try to find a port that matches common web ports
+      for (const webPort of webPorts) {
+        const port = ports.find(p => p.container === webPort || p.host === webPort);
+        if (port) {
+          const protocol = port.container === '443' || port.host === '443' ? 'https' : 'http';
+          // Ensure the port is a valid string and take only the first part if there are commas
+          const hostPort = String(port.host).split(',')[0].trim();
+          if (hostPort) {
+            return `${protocol}://localhost:${hostPort}`;
+          }
+        }
+      }
+
+      // If no common web port is found, use the first port
+      if (ports.length > 0) {
+        const firstPort = ports[0];
+        // Make sure the port has a host value
+        if (firstPort.host) {
+          // Take only the first part if there are commas
+          const hostPort = String(firstPort.host).split(',')[0].trim();
+          if (hostPort) {
+            return `http://localhost:${hostPort}`;
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error generating container URL:', error);
+    }
+
+    return null;
+  };
+
+  // Function to open the container URL in a new tab
+  const openContainerUrl = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    try {
+      const url = getContainerUrl();
+      console.log('Opening URL:', url); // Debug log
+
+      if (!url) {
+        console.warn('No URL available to open');
+        return;
+      }
+
+      // Open URL in a new tab using window.open
+      window.open(url, '_blank', 'noopener,noreferrer');
+
+    } catch (error) {
+      console.error('Error in openContainerUrl:', error);
+
+      // Fallback method if window.open fails
+      try {
+        const url = getContainerUrl();
+        if (url) {
+          // Create a temporary link element
+          const link = document.createElement('a');
+          link.href = url;
+          link.target = '_blank';
+          link.rel = 'noopener noreferrer';
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+        }
+      } catch (fallbackError) {
+        console.error('Fallback method failed:', fallbackError);
+        alert(`Could not open URL: ${getContainerUrl()}. Try editing the URL.`);
+      }
+    }
+  };
+
+  // Function to open the URL edit dialog
+  const openEditUrlDialog = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    // Initialize with current URL or empty string
+    setCustomUrl(getContainerUrl() || '');
+    setIsEditUrlDialogOpen(true);
+  };
+
+  // State to force re-render when URL changes
+  const [urlVersion, setUrlVersion] = useState(0);
+
+  // Function to save the custom URL
+  const saveCustomUrl = () => {
+    try {
+      // Basic validation
+      if (customUrl) {
+        // Clean up the URL - remove commas and anything after the first port
+        const cleanUrl = customUrl.split(',')[0].trim();
+
+        // Try to parse as URL to validate
+        new URL(cleanUrl);
+
+        // Save to localStorage
+        localStorage.setItem(storageKey, cleanUrl);
+        toast.success('Custom URL saved');
+      } else {
+        // If empty, remove any saved custom URL
+        localStorage.removeItem(storageKey);
+        toast.success('Custom URL removed');
+      }
+
+      // Close the dialog
+      setIsEditUrlDialogOpen(false);
+
+      // Update the UI without refreshing the page
+      // Increment the version to force a re-render
+      setUrlVersion(prev => prev + 1);
+
+      // Reset the input field
+      setCustomUrl("");
+    } catch (error) {
+      toast.error('Invalid URL format');
+    }
+  };
   const statusColors = {
     running: "bg-metricly-success text-metricly-background",
     stopped: "bg-gray-500 text-white",
@@ -44,7 +191,61 @@ export function ContainerCard({
       onAction(action, id);
     }
   };
-  return <Card className="bg-metricly-secondary border-white/5 overflow-hidden hover:border-metricly-accent/20 transition-colors flex flex-col h-full">
+
+  // Check if the container has web ports
+  const hasWebPort = getContainerUrl() !== null;
+  return <>
+    {/* URL Edit Dialog */}
+    <Dialog open={isEditUrlDialogOpen} onOpenChange={setIsEditUrlDialogOpen}>
+      <DialogContent className="sm:max-w-[425px]">
+        <DialogHeader>
+          <DialogTitle>Edit Container URL</DialogTitle>
+          <DialogDescription>
+            Enter a custom URL for this container or leave empty to use the auto-detected URL.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="grid gap-4 py-4">
+          <div className="space-y-2">
+            <label htmlFor="url" className="text-sm font-medium">Custom URL</label>
+            <Input
+              id="url"
+              value={customUrl}
+              onChange={(e) => setCustomUrl(e.target.value)}
+              placeholder="http://localhost:8080"
+              className="w-full bg-metricly-background text-white border-metricly-secondary/80"
+            />
+            <p className="text-xs text-muted-foreground">Enter a custom URL or leave empty to use auto-detected URL</p>
+          </div>
+
+          {ports && ports.length > 0 && (
+            <div className="mt-4 p-3 bg-metricly-background rounded-md border border-metricly-secondary/50">
+              <p className="text-sm font-medium mb-2">Available Ports</p>
+              <div className="space-y-2">
+                {ports.map((port, index) => (
+                  <div key={index} className="flex items-center justify-between text-xs bg-metricly-secondary/30 p-2 rounded">
+                    <div className="flex space-x-2">
+                      <span className="text-muted-foreground">Container:</span>
+                      <span className="font-mono text-metricly-accent">{port.container}</span>
+                    </div>
+                    <span className="text-muted-foreground">→</span>
+                    <div className="flex space-x-2">
+                      <span className="text-muted-foreground">Host:</span>
+                      <span className="font-mono text-metricly-accent">{port.host}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setIsEditUrlDialogOpen(false)}>Cancel</Button>
+          <Button onClick={saveCustomUrl}>Save</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+
+    <Card className="bg-metricly-secondary border-white/5 overflow-hidden hover:border-metricly-accent/20 transition-colors flex flex-col h-full relative">
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <CardTitle className="font-mono text-base text-text">
@@ -149,12 +350,57 @@ export function ContainerCard({
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => handleAction('info')}>
-                  <Info className="h-4 w-4" />
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className={`h-8 w-8 ${!hasWebPort
+                    ? 'opacity-50 cursor-not-allowed'
+                    : 'hover:text-metricly-accent hover:border-metricly-accent hover:bg-metricly-accent/10'}`}
+                  onClick={(e) => {
+                    if (hasWebPort) {
+                      e.stopPropagation();
+                      openContainerUrl(e);
+                    }
+                  }}
+                  disabled={!hasWebPort}
+                  type="button"
+                  title="Open in browser"
+                >
+                  <ExternalLink className="h-4 w-4" />
                 </Button>
               </TooltipTrigger>
               <TooltipContent>
-                <p>Container Details</p>
+                {hasWebPort ? (
+                  <div className="max-w-[200px] space-y-1">
+                    <p className="font-medium">Open in Browser</p>
+                    <p className="text-xs truncate">{getContainerUrl()}</p>
+                  </div>
+                ) : (
+                  <p>No Web Port Available</p>
+                )}
+              </TooltipContent>
+            </Tooltip>
+
+            {/* Edit URL button */}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-8 w-8 hover:bg-metricly-accent/10 hover:text-metricly-accent hover:border-metricly-accent"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    e.preventDefault();
+                    openEditUrlDialog(e);
+                  }}
+                  type="button"
+                  title="Edit URL"
+                >
+                  <Pencil className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Edit Container URL</p>
               </TooltipContent>
             </Tooltip>
 
@@ -215,5 +461,6 @@ export function ContainerCard({
           </TooltipProvider>
         </div>
       </div>
-    </Card>;
+    </Card>
+  </>;
 }

@@ -24,7 +24,11 @@ const Dashboard = () => {
         <h1 className="text-2xl font-semibold">Dashboard</h1>
         <div className="text-sm text-muted-foreground flex items-center">
           <ServerIcon className="w-4 h-4 mr-1" />
-          <span>Server: {activeServer ? (activeServer.ip_address === '127.0.0.1' ? 'localhost' : activeServer.ip_address) : 'localhost'}</span>
+          <span>Server: {activeServer ?
+            (activeServer.name ||
+              (activeServer.ip_address === '127.0.0.1' ? 'localhost' : activeServer.ip_address)
+            ) : 'localhost'}
+          </span>
         </div>
       </div>
 

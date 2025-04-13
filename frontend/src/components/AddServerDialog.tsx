@@ -19,7 +19,7 @@ export function AddServerDialog() {
     return () => document.removeEventListener('open-add-server-dialog', handleOpenDialog);
   }, []);
 
-  const { refreshServers } = useServer();
+  const { refreshServers, servers } = useServer();
 
   const handleAddServer = async () => {
     if (!serverAddress) {
@@ -34,11 +34,39 @@ export function AddServerDialog() {
       return;
     }
 
+    // Normalize the address: convert localhost to 127.0.0.1 and strip port if present
+    let normalizedAddress = serverAddress;
+    if (normalizedAddress.toLowerCase() === 'localhost') {
+      normalizedAddress = '127.0.0.1';
+    }
+
+    // Strip port if present
+    const newIp = normalizedAddress.split(':')[0];
+
+    // Check if server with this IP already exists
+    const serverExists = servers.some(server => {
+      // Normalize existing server IP (strip port if present)
+      const existingIp = server.ip_address.split(':')[0];
+
+      // Check if IPs match (127.0.0.1 is equivalent to localhost)
+      return existingIp === newIp ||
+             (existingIp === '127.0.0.1' && newIp === 'localhost') ||
+             (existingIp === 'localhost' && newIp === '127.0.0.1');
+    });
+
+    if (serverExists) {
+      toast.error(`Server with IP address ${normalizedAddress} already exists`);
+      return;
+    }
+
     setIsVerifying(true);
 
     try {
-      // Convert localhost to 127.0.0.1 for API
-      const ipAddress = serverAddress.toLowerCase() === 'localhost' ? '127.0.0.1' : serverAddress;
+      // Always use 127.0.0.1 instead of localhost for consistency
+      let ipAddress = serverAddress;
+      if (ipAddress.toLowerCase() === 'localhost') {
+        ipAddress = '127.0.0.1';
+      }
 
       // Add the server
       await addServer(ipAddress);
