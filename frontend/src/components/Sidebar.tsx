@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "./ui/button";
-import { useTheme } from "../hooks/use-theme";
+// import { useTheme } from "../hooks/use-theme";
 import { useAuth } from "../contexts/AuthContext";
 import {
   LayoutDashboard,
@@ -12,8 +12,8 @@ import {
   Plus,
   PanelLeft,
   PanelLeftClose,
-  Sun,
-  Moon,
+  // Sun,
+  // Moon,
   Network,
   ServerCrash
 } from "lucide-react";
@@ -46,7 +46,7 @@ const NavItem = ({ icon, label, active, onClick }: NavItemProps) => {
 
 const Sidebar = () => {
   const navigate = useNavigate();
-  const { theme, setTheme } = useTheme();
+  // const { theme, setTheme } = useTheme();
   const { logout } = useAuth();
   const [collapsed, setCollapsed] = useState(false);
   const [activePage, setActivePage] = useState("dashboard");
@@ -60,9 +60,9 @@ const Sidebar = () => {
     setCollapsed(!collapsed);
   };
 
-  const toggleTheme = () => {
-    setTheme(theme === "dark" ? "light" : "dark");
-  };
+  // const toggleTheme = () => {
+  //   setTheme(theme === "dark" ? "light" : "dark");
+  // };
 
   const handleAddServerClick = () => {
     document.dispatchEvent(new CustomEvent('open-add-server-dialog'));
@@ -230,14 +230,15 @@ const Sidebar = () => {
       </div>
 
       <div className="p-3 border-t border-overlay0/30 flex flex-col gap-2">
-        <Button
+        {/* Light mode toggle button temporarily disabled */}
+        {/* <Button
           variant="ghost"
           className="w-full justify-center"
           onClick={toggleTheme}
         >
           {theme === "dark" ? <Sun size={18} /> : <Moon size={18} />}
           {!collapsed && <span className="ml-2">{theme === "dark" ? "Light Mode" : "Dark Mode"}</span>}
-        </Button>
+        </Button> */}
 
         <Button
           variant="ghost"

@@ -608,3 +608,43 @@ def change_password():
     except Exception as e:
         db.session.rollback()
         return jsonify({"error": str(e)}), 500
+
+@api_bp.route('/change-username', methods=['POST'])
+@token_required
+def change_username():
+    data = request.get_json()
+
+    if not data or 'new_username' not in data:
+        return jsonify({"error": "Missing new username"}), 400
+
+    try:
+        # Get current user from token
+        token = request.headers.get("Authorization").split("Bearer ")[-1]
+        user_data = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
+        current_user = User.query.filter_by(username=user_data["username"]).first()
+
+        if not current_user:
+            return jsonify({"error": "User not found"}), 404
+
+        # Check if the new username already exists
+        if User.query.filter_by(username=data['new_username']).first():
+            return jsonify({"error": "Username already exists"}), 400
+
+        # Update username
+        current_user.username = data['new_username']
+        db.session.commit()
+
+        # Generate a new token with the updated username
+        new_token = jwt.encode(
+            {
+                "username": current_user.username,
+                "exp": datetime.utcnow() + timedelta(hours=TOKEN_EXPIRATION)
+            },
+            SECRET_KEY,
+            algorithm="HS256",
+        )
+
+        return jsonify({"message": "Username updated successfully", "token": new_token})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": str(e)}), 500

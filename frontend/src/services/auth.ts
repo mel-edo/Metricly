@@ -1,4 +1,4 @@
-import { publicRequest } from './api';
+import { publicRequest, authenticatedRequest } from './api';
 
 interface LoginCredentials {
   username: string;
@@ -15,13 +15,13 @@ const login = async (credentials: LoginCredentials): Promise<string> => {
     method: 'POST',
     body: JSON.stringify(credentials),
   });
-  
+
   // Store the token in localStorage
   if (response.token) {
     localStorage.setItem('token', response.token);
     return response.token;
   }
-  
+
   throw new Error('Login failed: No token received');
 };
 
@@ -45,29 +45,28 @@ const register = async (credentials: LoginCredentials): Promise<void> => {
 
 // Change password function
 const changePassword = async (oldPassword: string, newPassword: string): Promise<void> => {
-  const token = localStorage.getItem('token');
-  
-  if (!token) {
-    throw new Error('Authentication required');
-  }
-  
-  await fetch(`${import.meta.env.VITE_API_URL}/api/change-password`, {
+  await authenticatedRequest('/change-password', {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`,
-    },
     body: JSON.stringify({
       old_password: oldPassword,
       new_password: newPassword,
     }),
-  }).then(async (response) => {
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.error || `API error: ${response.status}`);
-    }
-    return response.json();
   });
 };
 
-export { login, logout, isAuthenticated, register, changePassword };
+// Change username function
+const changeUsername = async (newUsername: string): Promise<void> => {
+  const data = await authenticatedRequest('/change-username', {
+    method: 'POST',
+    body: JSON.stringify({
+      new_username: newUsername,
+    }),
+  });
+
+  // Update the token in localStorage
+  if (data.token) {
+    localStorage.setItem('token', data.token);
+  }
+};
+
+export { login, logout, isAuthenticated, register, changePassword, changeUsername };

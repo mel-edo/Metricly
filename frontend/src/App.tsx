@@ -12,6 +12,7 @@ import ServersPage from "./pages/Servers";
 import NetworkPage from "./pages/Network";
 
 import ContainersPage from "./pages/Containers";
+import SettingsPage from "./pages/Settings";
 import { AddServerDialog } from "./components/AddServerDialog";
 import { SwitchServerDialog } from "./components/SwitchServerDialog";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
@@ -58,6 +59,7 @@ const AppContent = () => {
               <Route path="network" element={<NetworkPage />} />
 
               <Route path="containers" element={<ContainersPage />} />
+              <Route path="settings" element={<SettingsPage />} />
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>
