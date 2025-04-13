@@ -8,6 +8,8 @@ import { useState } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "./ui/dialog";
 import { Input } from "./ui/input";
 import { toast } from "sonner";
+import { getContainerLogs } from "../services/containers";
+import { useServer } from "../contexts/ServerContext";
 interface ContainerCardProps {
   id: string;
   name: string;
@@ -37,9 +39,18 @@ export function ContainerCard({
   ports,
   onAction
 }: ContainerCardProps) {
+  const { activeServer } = useServer();
+  const serverIp = activeServer?.ip_address || '127.0.0.1';
+
   // State for URL editing dialog
   const [isEditUrlDialogOpen, setIsEditUrlDialogOpen] = useState(false);
   const [customUrl, setCustomUrl] = useState("");
+
+  // State for terminal dialog
+  const [isTerminalOpen, setIsTerminalOpen] = useState(false);
+  const [logs, setLogs] = useState<string>("");
+  const [isLoadingLogs, setIsLoadingLogs] = useState(false);
+  const [logsError, setLogsError] = useState<string | null>(null);
 
   // State to store the custom URL for this container
   const storageKey = `container-${id}-custom-url`;
@@ -195,6 +206,70 @@ export function ContainerCard({
   // Check if the container has web ports
   const hasWebPort = getContainerUrl() !== null;
   return <>
+    {/* Terminal Dialog */}
+    <Dialog open={isTerminalOpen} onOpenChange={setIsTerminalOpen}>
+      <DialogContent className="sm:max-w-[800px] max-h-[80vh] overflow-hidden flex flex-col">
+        <DialogHeader>
+          <DialogTitle className="flex items-center">
+            <Terminal className="mr-2 h-4 w-4" />
+            {name} Logs
+          </DialogTitle>
+          <DialogDescription>
+            Container logs for {name}
+          </DialogDescription>
+        </DialogHeader>
+        <div className="flex-1 overflow-hidden min-h-[300px] flex flex-col">
+          {isLoadingLogs ? (
+            <div className="flex items-center justify-center h-full">
+              <div className="animate-spin h-8 w-8 border-4 border-metricly-accent/50 border-t-metricly-accent rounded-full"></div>
+            </div>
+          ) : logsError ? (
+            <div className="bg-metricly-error/10 border border-metricly-error/30 rounded-md p-4 text-center h-full flex flex-col items-center justify-center">
+              <AlertCircle className="h-8 w-8 text-metricly-error mb-2" />
+              <p className="text-metricly-error font-medium">Error loading logs</p>
+              <p className="text-sm text-metricly-error/80 mt-1">{logsError}</p>
+            </div>
+          ) : (
+            <pre className="bg-metricly-background/80 border border-metricly-secondary/30 rounded-md p-4 text-xs font-mono overflow-auto h-full whitespace-pre-wrap">
+              {logs || 'No logs available for this container'}
+            </pre>
+          )}
+        </div>
+        <DialogFooter className="mt-4">
+          <Button
+            variant="outline"
+            onClick={() => {
+              setIsTerminalOpen(false);
+              setLogs('');
+            }}
+          >
+            Close
+          </Button>
+          <Button
+            onClick={() => {
+              setIsLoadingLogs(true);
+              setLogsError(null);
+
+              // Refresh logs
+              getContainerLogs(name, serverIp)
+                .then(response => {
+                  setLogs(response.logs || 'No logs available');
+                })
+                .catch(error => {
+                  console.error('Error fetching logs:', error);
+                  setLogsError(error instanceof Error ? error.message : 'Failed to fetch logs');
+                })
+                .finally(() => {
+                  setIsLoadingLogs(false);
+                });
+            }}
+          >
+            Refresh Logs
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+
     {/* URL Edit Dialog */}
     <Dialog open={isEditUrlDialogOpen} onOpenChange={setIsEditUrlDialogOpen}>
       <DialogContent className="sm:max-w-[425px]">
@@ -406,12 +481,36 @@ export function ContainerCard({
 
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button variant="outline" size="icon" className="h-8 w-8 hover:text-metricly-accent hover:border-metricly-accent hover:bg-metricly-accent/10" onClick={() => handleAction('terminal')}>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-8 w-8 hover:text-metricly-accent hover:border-metricly-accent hover:bg-metricly-accent/10"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    e.preventDefault();
+                    setIsTerminalOpen(true);
+                    setIsLoadingLogs(true);
+                    setLogsError(null);
+
+                    // Fetch container logs
+                    getContainerLogs(name, serverIp)
+                      .then(response => {
+                        setLogs(response.logs || 'No logs available');
+                      })
+                      .catch(error => {
+                        console.error('Error fetching logs:', error);
+                        setLogsError(error instanceof Error ? error.message : 'Failed to fetch logs');
+                      })
+                      .finally(() => {
+                        setIsLoadingLogs(false);
+                      });
+                  }}
+                >
                   <Terminal className="h-4 w-4" />
                 </Button>
               </TooltipTrigger>
               <TooltipContent>
-                <p>Terminal</p>
+                <p>View Logs</p>
               </TooltipContent>
             </Tooltip>
 
