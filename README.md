@@ -50,14 +50,18 @@ Metricly is a modern, real-time monitoring dashboard for Docker containers and s
 - Make container actions work properly
 - Fetch actual metrics for the network tab
 - figure out the actual logic behind container's healthy status
-- In containers tab, fetch volumes and display them in the volumes tab (rename images to volumes)
-- The program currently can't fetch system metrics for remote servers (only works on localhost)
+- The program currently can't fetch system metrics for remote servers (only works on localhost) - files like container.ts are hardcoded to use 127.0.0.1 as the default server ip
 
 ### Backend Integration
 
 - Implement proper error handling for API requests (to which end is this required)
 - Implement alerts system with configurable thresholds (check on how to alert the user)
 - Complete reconnection of redesigned frontend to backend (check what is left to do in here)
+
+### Alerting
+
+- implement system cpu usage, disk usage, mem usage high alerts (just diplay this as a toast)
+- implement container cpu usage, mem usage high alerts (but how would you decide how much usage is high enough?)
 
 ## Planned Features
 

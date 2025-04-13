@@ -1,4 +1,4 @@
-import { useState } from 'react';
+
 import {
   LineChart,
   Line,
@@ -23,6 +23,8 @@ interface ChartDataPoint {
 interface ContainerMetricsChartProps {
   data: ChartDataPoint[];
   containerName: string;
+  timeRange: string;
+  onTimeRangeChange: (range: string) => void;
 }
 
 // Custom tooltip component
@@ -49,8 +51,7 @@ const CustomTooltip = ({ active, payload, label }: TooltipProps<ValueType, NameT
   );
 };
 
-export function ContainerMetricsChart({ data, containerName }: ContainerMetricsChartProps) {
-  const [timeRange, setTimeRange] = useState('1h');
+export function ContainerMetricsChart({ data, containerName, timeRange, onTimeRangeChange }: ContainerMetricsChartProps) {
 
   return (
     <div className="bg-metricly-secondary rounded-lg p-4">
@@ -63,7 +64,7 @@ export function ContainerMetricsChart({ data, containerName }: ContainerMetricsC
           <Button
             variant={timeRange === '1h' ? "secondary" : "outline"}
             size="sm"
-            onClick={() => setTimeRange('1h')}
+            onClick={() => onTimeRangeChange('1h')}
             className="h-7 px-2 text-xs"
           >
             1H
@@ -71,7 +72,7 @@ export function ContainerMetricsChart({ data, containerName }: ContainerMetricsC
           <Button
             variant={timeRange === '6h' ? "secondary" : "outline"}
             size="sm"
-            onClick={() => setTimeRange('6h')}
+            onClick={() => onTimeRangeChange('6h')}
             className="h-7 px-2 text-xs"
           >
             6H
@@ -79,7 +80,7 @@ export function ContainerMetricsChart({ data, containerName }: ContainerMetricsC
           <Button
             variant={timeRange === '24h' ? "secondary" : "outline"}
             size="sm"
-            onClick={() => setTimeRange('24h')}
+            onClick={() => onTimeRangeChange('24h')}
             className="h-7 px-2 text-xs"
           >
             24H
@@ -88,45 +89,54 @@ export function ContainerMetricsChart({ data, containerName }: ContainerMetricsC
       </div>
 
       <div className="h-[240px] w-full">
-        <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={data}>
-            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
-            <XAxis
-              dataKey="time"
-              stroke="rgba(255,255,255,0.5)"
-              tick={{ fill: 'rgba(255,255,255,0.5)', fontSize: 12 }}
-            />
-            <YAxis
-              stroke="rgba(255,255,255,0.5)"
-              tick={{ fill: 'rgba(255,255,255,0.5)', fontSize: 12 }}
-              domain={[0, 100]}
-              unit="%"
-            />
-            <RechartsTooltip
-              content={<CustomTooltip />}
-              wrapperStyle={{ zIndex: 10 }}
-            />
-            <Legend />
-            <Line
-              type="monotone"
-              dataKey="cpu"
-              name="CPU Usage"
-              stroke="#4ade80"
-              strokeWidth={2}
-              dot={false}
-              activeDot={{ r: 4 }}
-            />
-            <Line
-              type="monotone"
-              dataKey="memory"
-              name="Memory Usage"
-              stroke="#60a5fa"
-              strokeWidth={2}
-              dot={false}
-              activeDot={{ r: 4 }}
-            />
-          </LineChart>
-        </ResponsiveContainer>
+        {data.length === 0 ? (
+          <div className="h-full flex items-center justify-center">
+            <div className="text-center">
+              <div className="text-metricly-accent mb-2">No metrics data available</div>
+              <p className="text-xs text-muted-foreground">Try selecting a different time range or container</p>
+            </div>
+          </div>
+        ) : (
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={data}>
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
+              <XAxis
+                dataKey="time"
+                stroke="rgba(255,255,255,0.5)"
+                tick={{ fill: 'rgba(255,255,255,0.5)', fontSize: 12 }}
+              />
+              <YAxis
+                stroke="rgba(255,255,255,0.5)"
+                tick={{ fill: 'rgba(255,255,255,0.5)', fontSize: 12 }}
+                domain={[0, 100]}
+                unit="%"
+              />
+              <RechartsTooltip
+                content={<CustomTooltip />}
+                wrapperStyle={{ zIndex: 10 }}
+              />
+              <Legend />
+              <Line
+                type="monotone"
+                dataKey="cpu"
+                name="CPU Usage"
+                stroke="#4ade80"
+                strokeWidth={2}
+                dot={false}
+                activeDot={{ r: 4 }}
+              />
+              <Line
+                type="monotone"
+                dataKey="memory"
+                name="Memory Usage"
+                stroke="#60a5fa"
+                strokeWidth={2}
+                dot={false}
+                activeDot={{ r: 4 }}
+              />
+            </LineChart>
+          </ResponsiveContainer>
+        )}
       </div>
     </div>
   );

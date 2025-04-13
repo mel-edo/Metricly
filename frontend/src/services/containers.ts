@@ -56,18 +56,10 @@ const getContainerMetricsHistory = async (
   timeRange: string = '1h'
 ): Promise<Record<string, ContainerMetrics[]>> => {
   try {
-    return await authenticatedRequest(`/servers/${serverIp}/docker/metrics?timeRange=${timeRange}`);
+    // Using publicRequest since the backend endpoint doesn't require authentication
+    return await publicRequest(`/servers/${serverIp}/docker/metrics?timeRange=${timeRange}&server=${serverIp}`);
   } catch (error) {
-    // If authentication fails, try to redirect to login
-    if (error instanceof Error &&
-        (error.message.includes('Authentication required') ||
-         error.message.includes('Token expired') ||
-         error.message.includes('Invalid token'))) {
-      // Redirect to login page if we're in a browser environment
-      if (typeof window !== 'undefined') {
-        window.location.href = '/login';
-      }
-    }
+    console.error('Error fetching container metrics:', error);
     throw error;
   }
 };

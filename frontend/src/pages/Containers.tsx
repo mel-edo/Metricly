@@ -2,50 +2,76 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ContainerOverview } from "@/components/ContainerOverview";
+import { ContainerVolumes } from "@/components/ContainerVolumes";
 import { useServer } from "@/contexts/ServerContext";
-import { Box, Server, AlertCircle } from "lucide-react";
+import { Box, Database, AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 
 import { Combobox, ComboboxOption } from "@/components/ui/combobox";
 import { ContainerMetricsChart } from "@/components/metrics/ContainerMetricsChart";
-import { getContainers } from "@/services/containers";
-import { useQuery } from "@tanstack/react-query";
+import { getContainers, getContainerMetricsHistory } from "@/services/containers";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
-// Generate mock data for the container metrics chart
-const generateMockMetricsData = () => {
-  const data = [];
-  const now = new Date();
+// Format container metrics data for the chart
+const formatMetricsData = (metricsData: Record<string, any[]>, containerId: string, containerOptions: ComboboxOption[]) => {
+  // Find the container name from the ID
+  const containerName = containerOptions.find(option => option.value === containerId)?.label;
 
-  for (let i = 0; i < 24; i++) {
-    const time = new Date(now.getTime() - (23 - i) * 1000 * 60 * 5);
-    data.push({
-      time: time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      cpu: Math.floor(Math.random() * 40) + 10, // Random value between 10-50%
-      memory: Math.floor(Math.random() * 30) + 20, // Random value between 20-50%
-    });
+  if (!containerName || !metricsData || !metricsData[containerName] || !metricsData[containerName].length) {
+    console.log(`No metrics data found for container ${containerName || containerId}`, metricsData);
+    return [];
   }
 
-  return data;
+  console.log(`Found ${metricsData[containerName].length} metrics for ${containerName}`);
+
+  return metricsData[containerName].map(metric => ({
+    time: new Date(metric.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+    cpu: metric.cpu_percent || 0,
+    memory: metric.memory_used && metric.memory_limit ?
+      (metric.memory_used / metric.memory_limit) * 100 : 0,
+  }));
 };
 
 const ContainersPage = () => {
+  // Default to overview tab
   const [activeTab, setActiveTab] = useState('overview');
   const [selectedContainer, setSelectedContainer] = useState<string>('');
   const [containerOptions, setContainerOptions] = useState<ComboboxOption[]>([]);
-  const [metricsData, setMetricsData] = useState<any[]>([]);
+  const [timeRange, setTimeRange] = useState<string>('1h');
 
   const { activeServer } = useServer();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   const serverIp = activeServer?.ip_address || '127.0.0.1';
 
   // Fetch containers
-  const { data: containerData } = useQuery({
+  const { data: containerData, isLoading: isLoadingContainers } = useQuery({
     queryKey: ['containers', serverIp],
     queryFn: () => getContainers(serverIp),
     refetchInterval: 10000, // Refresh every 10 seconds
   });
+
+  // Fetch container metrics
+  const { data: metricsData, isLoading: isLoadingMetrics, error: metricsError } = useQuery({
+    queryKey: ['containerMetrics', serverIp, selectedContainer, timeRange],
+    queryFn: async () => {
+      console.log(`Fetching metrics for server ${serverIp} with time range ${timeRange}`);
+      const data = await getContainerMetricsHistory(serverIp, timeRange);
+      console.log('Received metrics data:', data);
+      return data;
+    },
+    enabled: !!selectedContainer,
+    refetchInterval: 10000, // Refresh every 10 seconds
+  });
+
+  // Log any errors
+  useEffect(() => {
+    if (metricsError) {
+      console.error('Error fetching metrics:', metricsError);
+    }
+  }, [metricsError]);
 
   // Update container options when container data changes
   useEffect(() => {
@@ -59,7 +85,6 @@ const ContainersPage = () => {
       // Set the first container as selected by default if none is selected
       if (!selectedContainer && options.length > 0) {
         setSelectedContainer(options[0].value);
-        setMetricsData(generateMockMetricsData());
       }
     }
   }, [containerData, selectedContainer]);
@@ -68,7 +93,11 @@ const ContainersPage = () => {
   const handleContainerChange = (containerId: string) => {
     console.log('Container selected:', containerId);
     setSelectedContainer(containerId);
-    setMetricsData(generateMockMetricsData());
+  };
+
+  // Handle time range change
+  const handleTimeRangeChange = (range: string) => {
+    setTimeRange(range);
   };
 
   const handleCreateContainer = () => {
@@ -151,9 +180,9 @@ const ContainersPage = () => {
                 <Box className="mr-2 h-4 w-4" />
                 Overview
               </TabsTrigger>
-              <TabsTrigger value="images" className="flex items-center">
-                <Server className="mr-2 h-4 w-4" />
-                Images
+              <TabsTrigger value="volumes" className="flex items-center">
+                <Database className="mr-2 h-4 w-4" />
+                Volumes
               </TabsTrigger>
             </TabsList>
 
@@ -161,17 +190,8 @@ const ContainersPage = () => {
               <ContainerOverview />
             </TabsContent>
 
-            <TabsContent value="images">
-              <div className="bg-metricly-secondary/30 rounded-lg p-8 text-center">
-                <Server className="h-12 w-12 text-metricly-accent mx-auto mb-4" />
-                <h3 className="text-lg font-medium mb-2">Docker Images</h3>
-                <p className="text-muted-foreground mb-4">
-                  Manage your Docker images and pull new ones from registries
-                </p>
-                <div className="bg-metricly-background/50 p-4 rounded-md text-sm text-muted-foreground">
-                  This feature will be available in a future update
-                </div>
-              </div>
+            <TabsContent value="volumes">
+              <ContainerVolumes />
             </TabsContent>
           </Tabs>
         </CardContent>
@@ -199,10 +219,33 @@ const ContainersPage = () => {
               </div>
             </div>
 
-            {selectedContainer ? (
+            {isLoadingContainers || isLoadingMetrics ? (
+              <div className="bg-metricly-secondary/30 rounded-lg p-8 text-center">
+                <div className="animate-spin h-8 w-8 border-4 border-metricly-accent/50 border-t-metricly-accent rounded-full mx-auto mb-4"></div>
+                <p className="text-muted-foreground">Loading container metrics...</p>
+              </div>
+            ) : metricsError ? (
+              <div className="bg-metricly-secondary/30 rounded-lg p-8 text-center">
+                <AlertCircle className="h-12 w-12 text-metricly-error mx-auto mb-4" />
+                <h3 className="text-lg font-medium mb-2">Error Loading Metrics</h3>
+                <p className="text-muted-foreground mb-4">
+                  {metricsError instanceof Error ? metricsError.message : 'Failed to load container metrics'}
+                </p>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    queryClient.invalidateQueries({ queryKey: ['containerMetrics'] });
+                  }}
+                >
+                  Retry
+                </Button>
+              </div>
+            ) : selectedContainer ? (
               <ContainerMetricsChart
-                data={metricsData}
+                data={formatMetricsData(metricsData || {}, selectedContainer, containerOptions)}
                 containerName={containerOptions.find(option => option.value === selectedContainer)?.label || ''}
+                timeRange={timeRange}
+                onTimeRangeChange={handleTimeRangeChange}
               />
             ) : (
               <div className="bg-metricly-secondary/30 rounded-lg p-8 text-center">
