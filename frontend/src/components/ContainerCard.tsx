@@ -1,8 +1,9 @@
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
+import { CoolSpinner } from "./ui/cool-spinner";
 import { ProgressBar } from "./ProgressBar";
 import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
-import { Terminal, RefreshCw, Play, Pause, Trash2, CheckCircle, AlertTriangle, XCircle, AlertCircle, ExternalLink, Pencil } from "lucide-react";
+import { Terminal, RefreshCw, Play, Pause, Trash2, CheckCircle, AlertTriangle, XCircle, AlertCircle, ExternalLink, Pencil, Loader2 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "./ui/tooltip";
 import { useState, useRef } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "./ui/dialog";
@@ -29,6 +30,7 @@ interface ContainerCardProps {
     host: string;
   }[];
   onAction?: (action: string, id: string) => void;
+  isLoading?: boolean;
 }
 export function ContainerCard({
   id,
@@ -39,7 +41,8 @@ export function ContainerCard({
   image,
   uptime,
   ports,
-  onAction
+  onAction,
+  isLoading = false
 }: ContainerCardProps) {
   const { activeServer } = useServer();
   const serverIp = activeServer?.ip_address || '127.0.0.1';
@@ -255,7 +258,7 @@ export function ContainerCard({
         <div className="flex-1 overflow-hidden min-h-[300px] flex flex-col">
           {isLoadingLogs ? (
             <div className="flex items-center justify-center h-full">
-              <div className="animate-spin h-8 w-8 border-4 border-metricly-accent/50 border-t-metricly-accent rounded-full"></div>
+              <CoolSpinner size="md" text="Loading logs..." variant="accent" />
             </div>
           ) : logsError ? (
             <div className="bg-metricly-error/10 border border-metricly-error/30 rounded-md p-4 text-center h-full flex flex-col items-center justify-center">
@@ -375,24 +378,30 @@ export function ContainerCard({
     </Dialog>
 
     <Card className="bg-metricly-secondary border-white/5 overflow-hidden hover:border-metricly-accent/20 transition-colors flex flex-col h-full relative">
-      <CardHeader className="pb-3">
-        <div className="flex items-center justify-between">
-          <CardTitle className="font-mono text-base text-text">
-            {name}
-          </CardTitle>
-          <Badge className={`${statusColors[status]}`}>
-            {displayStatus}
-          </Badge>
+      {isLoading ? (
+        <div className="flex items-center justify-center h-full p-8">
+          <CoolSpinner size="md" text="Loading container data..." variant="accent" />
         </div>
-        <div className="flex flex-col space-y-1">
-          <p className="text-xs text-muted-foreground truncate max-w-[300px]">{image}</p>
-          <div className="flex items-center text-xs text-muted-foreground">
-            <span className="mr-1">Uptime:</span>
-            <span className="font-mono">{status === "running" ? uptime : "Not running"}</span>
-          </div>
-        </div>
-      </CardHeader>
-      <CardContent className="pb-4 space-y-4 flex-1">
+      ) : (
+        <>
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <CardTitle className="font-mono text-base text-text">
+                {name}
+              </CardTitle>
+              <Badge className={`${statusColors[status]}`}>
+                {displayStatus}
+              </Badge>
+            </div>
+            <div className="flex flex-col space-y-1">
+              <p className="text-xs text-muted-foreground truncate max-w-[300px]">{image}</p>
+              <div className="flex items-center text-xs text-muted-foreground">
+                <span className="mr-1">Uptime:</span>
+                <span className="font-mono">{status === "running" ? uptime : "Not running"}</span>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="pb-4 space-y-4 flex-1">
         {/* Health Status Indicator */}
         <div className="flex items-center justify-between p-2 rounded-md bg-metricly-background/30 mb-3">
           <span className="text-xs font-medium">Health Status</span>
@@ -674,6 +683,8 @@ export function ContainerCard({
           </TooltipProvider>
         </div>
       </div>
+        </>
+      )}
     </Card>
   </>;
 }

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Input } from './ui/input';
 import { Button } from './ui/button';
 import { Search, FilterIcon, AlertCircle, Database, HardDrive } from 'lucide-react';
+import { CoolSpinner } from './ui/cool-spinner';
 
 import { useServer } from '../contexts/ServerContext';
 import { getContainers } from '../services/containers';
@@ -58,9 +59,8 @@ export function ContainerVolumes() {
       </div>
 
       {isLoading ? (
-        <div className="bg-metricly-secondary rounded-lg p-8 text-center">
-          <div className="animate-spin h-8 w-8 border-4 border-metricly-accent/50 border-t-metricly-accent rounded-full mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Loading volumes...</p>
+        <div className="bg-metricly-secondary rounded-lg p-8 flex items-center justify-center">
+          <CoolSpinner size="md" text="Loading volumes..." variant="accent" />
         </div>
       ) : error ? (
         <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-8 text-center">

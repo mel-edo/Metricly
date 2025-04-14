@@ -13,6 +13,7 @@ import {
 import { NameType, ValueType } from 'recharts/types/component/DefaultTooltipContent';
 import { Button } from '../ui/button';
 import { Clock } from 'lucide-react';
+import { CoolSpinner } from '../ui/cool-spinner';
 
 interface ChartDataPoint {
   time: string;
@@ -23,6 +24,7 @@ interface ChartDataPoint {
 
 interface SystemMetricsChartProps {
   data: ChartDataPoint[];
+  isLoading?: boolean;
 }
 
 // Custom tooltip component
@@ -49,7 +51,7 @@ const CustomTooltip = ({ active, payload, label }: TooltipProps<ValueType, NameT
   );
 };
 
-export function SystemMetricsChart({ data }: SystemMetricsChartProps) {
+export function SystemMetricsChart({ data, isLoading = false }: SystemMetricsChartProps) {
   const [timeRange, setTimeRange] = useState('1h');
 
   return (
@@ -88,51 +90,57 @@ export function SystemMetricsChart({ data }: SystemMetricsChartProps) {
       </div>
 
       <div className="h-[240px] w-full">
-        <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={data}>
-            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
-            <XAxis
-              dataKey="time"
-              stroke="rgba(255,255,255,0.5)"
-              tick={{ fill: 'rgba(255,255,255,0.5)', fontSize: 12 }}
-            />
-            <YAxis
-              stroke="rgba(255,255,255,0.5)"
-              tick={{ fill: 'rgba(255,255,255,0.5)', fontSize: 12 }}
-              domain={[0, 100]}
-              unit="%"
-            />
-            <RechartsTooltip
-              content={<CustomTooltip />}
-              wrapperStyle={{ zIndex: 10 }}
-            />
-            <Legend />
-            <Line
-              type="monotone"
-              dataKey="cpu"
-              stroke="#4ade80"
-              strokeWidth={2}
-              dot={false}
-              activeDot={{ r: 4 }}
-            />
-            <Line
-              type="monotone"
-              dataKey="memory"
-              stroke="#60a5fa"
-              strokeWidth={2}
-              dot={false}
-              activeDot={{ r: 4 }}
-            />
-            <Line
-              type="monotone"
-              dataKey="disk"
-              stroke="#fbbf24"
-              strokeWidth={2}
-              dot={false}
-              activeDot={{ r: 4 }}
-            />
-          </LineChart>
-        </ResponsiveContainer>
+        {isLoading ? (
+          <div className="h-full flex items-center justify-center">
+            <CoolSpinner size="md" text="Loading chart data..." variant="accent" />
+          </div>
+        ) : (
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={data}>
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
+              <XAxis
+                dataKey="time"
+                stroke="rgba(255,255,255,0.5)"
+                tick={{ fill: 'rgba(255,255,255,0.5)', fontSize: 12 }}
+              />
+              <YAxis
+                stroke="rgba(255,255,255,0.5)"
+                tick={{ fill: 'rgba(255,255,255,0.5)', fontSize: 12 }}
+                domain={[0, 100]}
+                unit="%"
+              />
+              <RechartsTooltip
+                content={<CustomTooltip />}
+                wrapperStyle={{ zIndex: 10 }}
+              />
+              <Legend />
+              <Line
+                type="monotone"
+                dataKey="cpu"
+                stroke="#4ade80"
+                strokeWidth={2}
+                dot={false}
+                activeDot={{ r: 4 }}
+              />
+              <Line
+                type="monotone"
+                dataKey="memory"
+                stroke="#60a5fa"
+                strokeWidth={2}
+                dot={false}
+                activeDot={{ r: 4 }}
+              />
+              <Line
+                type="monotone"
+                dataKey="disk"
+                stroke="#fbbf24"
+                strokeWidth={2}
+                dot={false}
+                activeDot={{ r: 4 }}
+              />
+            </LineChart>
+          </ResponsiveContainer>
+        )}
       </div>
     </div>
   );

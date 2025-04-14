@@ -5,6 +5,7 @@ import { ContainerOverview } from "@/components/ContainerOverview";
 import { ContainerVolumes } from "@/components/ContainerVolumes";
 import { useServer } from "@/contexts/ServerContext";
 import { Box, Database, AlertCircle } from "lucide-react";
+import { CoolSpinner } from "@/components/ui/cool-spinner";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 
@@ -205,9 +206,8 @@ const ContainersPage = () => {
             </div>
 
             {isLoadingContainers || isLoadingMetrics ? (
-              <div className="bg-metricly-secondary/30 rounded-lg p-8 text-center">
-                <div className="animate-spin h-8 w-8 border-4 border-metricly-accent/50 border-t-metricly-accent rounded-full mx-auto mb-4"></div>
-                <p className="text-muted-foreground">Loading container metrics...</p>
+              <div className="bg-metricly-secondary/30 rounded-lg p-8 flex items-center justify-center">
+                <CoolSpinner size="md" text="Loading container metrics..." variant="accent" />
               </div>
             ) : metricsError ? (
               <div className="bg-metricly-secondary/30 rounded-lg p-8 text-center">

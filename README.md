@@ -42,8 +42,6 @@ Metricly is a modern, real-time monitoring dashboard for Docker containers and s
 ### UI Improvements
 
 - Fix sidebar collapse/expand lag - sometimes there is not lag and sometimes there is
-- add a spinner to the container cards loading
-- maybe change the spinner for something cooler looking, like 3 dots maybe (grok's thingy)
 - Fix light mode theme and styling (proper light mode integration) - tricky (currently disabled)
 
 ### Data Integration

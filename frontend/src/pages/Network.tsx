@@ -1,4 +1,5 @@
-import { Network, ArrowDownFromLine, ArrowUpToLine, AlertTriangle, RefreshCw, Loader2 } from "lucide-react";
+import { Network, ArrowDownFromLine, ArrowUpToLine, AlertTriangle, RefreshCw } from "lucide-react";
+import { CoolSpinner } from "../components/ui/cool-spinner";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import { AreaChart, XAxis, YAxis, CartesianGrid, Tooltip, Area, ResponsiveContainer, TooltipProps } from 'recharts';
@@ -152,11 +153,7 @@ const NetworkPage = () => {
           <CardContent>
             {isLoadingInterfaces ? (
               <div className="h-[280px] flex items-center justify-center">
-                <div className="text-center">
-                  <Loader2 className="h-10 w-10 text-metricly-accent mx-auto mb-2 animate-spin" />
-                  <p className="text-metricly-accent">Loading network interfaces...</p>
-                  <p className="text-xs text-muted-foreground mt-1">This may take a few seconds</p>
-                </div>
+                <CoolSpinner size="lg" text="Loading network interfaces..." variant="accent" />
               </div>
             ) : interfacesError ? (
               <div className="flex items-center justify-center h-[280px]">
@@ -208,11 +205,7 @@ const NetworkPage = () => {
           <CardContent>
             {isLoadingTraffic ? (
               <div className="h-72 flex items-center justify-center">
-                <div className="text-center">
-                  <Loader2 className="h-10 w-10 text-metricly-accent mx-auto mb-2 animate-spin" />
-                  <p className="text-metricly-accent">Loading network traffic data...</p>
-                  <p className="text-xs text-muted-foreground mt-1">This may take a few seconds</p>
-                </div>
+                <CoolSpinner size="lg" text="Loading network traffic data..." variant="accent" />
               </div>
             ) : trafficError ? (
               <div className="h-72 flex items-center justify-center">

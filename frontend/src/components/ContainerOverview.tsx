@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { ContainerCard } from './ContainerCard';
 import { Input } from './ui/input';
 import { Button } from './ui/button';
+import { CoolSpinner } from './ui/cool-spinner';
 import { Search, FilterIcon, AlertCircle } from 'lucide-react';
 import { useToast } from '../hooks/use-toast';
 import { useServer } from '../contexts/ServerContext';
@@ -163,8 +164,21 @@ export function ContainerOverview() {
       </div>
 
       {isLoading ? (
-        <div className="bg-metricly-secondary rounded-lg p-8 text-center">
-          <p className="text-muted-foreground">Loading containers...</p>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {/* Show loading skeleton cards */}
+          {[1, 2, 3, 4, 5, 6].map((i) => (
+            <ContainerCard
+              key={i}
+              id={`skeleton-${i}`}
+              name="Loading..."
+              status="running"
+              cpu={{ usage: 0 }}
+              memory={{ usage: 0, limit: 100 }}
+              image="Loading..."
+              uptime="Loading..."
+              isLoading={true}
+            />
+          ))}
         </div>
       ) : error ? (
         <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-8 text-center">
@@ -192,6 +206,7 @@ export function ContainerOverview() {
               uptime={container.uptime}
               ports={container.ports}
               onAction={handleContainerAction}
+              isLoading={false} // Set to false since we're showing the container data
             />
           ))}
         </div>

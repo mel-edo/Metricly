@@ -6,6 +6,7 @@ import { SystemMetricsChart } from './metrics/SystemMetricsChart';
 import { useServer } from '../contexts/ServerContext';
 import { getCurrentSystemMetrics, getServerMetrics, ServerMetrics } from '../services/servers';
 import { useQuery } from '@tanstack/react-query';
+import { CoolSpinner } from './ui/cool-spinner';
 
 // Transform server metrics to chart data format
 const transformMetricsToChartData = (metrics: ServerMetrics[]) => {
@@ -70,9 +71,8 @@ export function SystemOverview() {
   if (isLoading) {
     return (
       <div className="space-y-6">
-        <div className="p-8 bg-metricly-secondary rounded-lg animate-pulse">
-          <div className="h-6 bg-metricly-background/50 rounded w-1/3 mb-4"></div>
-          <div className="h-20 bg-metricly-background/30 rounded"></div>
+        <div className="p-8 bg-metricly-secondary rounded-lg flex items-center justify-center">
+          <CoolSpinner size="lg" text="Loading system metrics..." variant="accent" />
         </div>
       </div>
     );
@@ -95,7 +95,7 @@ export function SystemOverview() {
       {systemData.disk.mounts.length > 0 && (
         <DiskMountsSection mounts={systemData.disk.mounts} formatBytes={formatBytes} />
       )}
-      <SystemMetricsChart data={chartData} />
+      <SystemMetricsChart data={chartData} isLoading={isLoadingHistorical} />
     </div>
   );
 }
