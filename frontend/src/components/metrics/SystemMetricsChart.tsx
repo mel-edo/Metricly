@@ -31,7 +31,7 @@ const CustomTooltip = ({ active, payload, label }: TooltipProps<ValueType, NameT
 
   return (
     <div className="custom-tooltip bg-metricly-background border border-metricly-secondary/50 rounded-md p-3 shadow-md">
-      <p className="font-medium text-xs mb-2 pb-1 border-b border-metricly-secondary/30">
+      <p className="font-medium text-sm mb-2 pb-1 border-b border-metricly-secondary/30">
         Time: {label}
       </p>
       {payload.map((entry, index) => (
@@ -40,7 +40,7 @@ const CustomTooltip = ({ active, payload, label }: TooltipProps<ValueType, NameT
             className="w-2 h-2 rounded-full mr-2"
             style={{ backgroundColor: entry.color }}
           />
-          <span className="text-xs">
+          <span className="text-sm">
             {entry.name}: <span className="font-medium">{Number(entry.value).toFixed(1)}%</span>
           </span>
         </div>
