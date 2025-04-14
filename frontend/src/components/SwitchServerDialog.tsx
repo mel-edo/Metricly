@@ -19,6 +19,14 @@ export function SwitchServerDialog() {
     };
   }, []);
 
+  // Auto-select the first server as soon as servers are available
+  useEffect(() => {
+    if (!loading && !error && servers.length > 0 && !activeServer) {
+      // Automatically select the first server if none is currently selected
+      setActiveServer(servers[0]);
+    }
+  }, [loading, servers, activeServer, setActiveServer, error]);
+
   const handleServerSelect = (server: ServerInfo) => {
     setActiveServer(server);
     setIsOpen(false);
