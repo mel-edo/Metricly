@@ -4,37 +4,39 @@
 @tailwind utilities;
 
 @layer base {
+  /* Default to dark theme - light theme support will be added later */
   :root {
-    /* Catppuccin Latte light mode colors */
-    --background: 220 9% 92%;   /* base */
-    --foreground: 234 16% 35%;  /* text */
-    --card: 220 9% 92%;         /* base */
-    --card-foreground: 234 16% 35%; /* text */
-    --popover: 220 9% 92%;      /* base */
-    --popover-foreground: 234 16% 35%; /* text */
-    --primary: 240 21% 76%;     /* lavender */
-    --primary-foreground: 234 16% 35%; /* text */
-    --secondary: 220 13% 91%;   /* mantle */
-    --secondary-foreground: 234 16% 35%; /* text */
-    --muted: 220 17% 80%;       /* surface1 */
-    --muted-foreground: 220 17% 60%;    /* subtext0 */
-    --accent: 240 21% 76%;      /* lavender */
-    --accent-foreground: 234 16% 35%;   /* text */
-    --destructive: 359 75% 45%; /* red */
-    --destructive-foreground: 220 9% 92%; /* base */
-    --border: 220 13% 80%;      /* surface0 */
-    --input: 220 13% 80%;       /* surface0 */
-    --ring: 240 21% 76%;        /* lavender */
-    --sidebar-background: 221 11% 83%; /* crust slightly lighter */
-    --sidebar-foreground: 234 16% 35%; /* text */
-    --sidebar-primary: 240 21% 76%;    /* lavender */
-    --sidebar-primary-foreground: 234 16% 35%; /* text */
-    --sidebar-accent: 220 13% 80%;     /* surface0 */
-    --sidebar-accent-foreground: 234 16% 35%; /* text */
-    --sidebar-border: 220 13% 80%;     /* surface0 */
-    --sidebar-ring: 240 21% 76%;       /* lavender */
+    /* Catppuccin Mocha dark mode colors */
+    --background: 240 21% 15%;  /* base */
+    --foreground: 227 70% 91%;  /* text */
+    --card: 240 21% 15%;        /* base */
+    --card-foreground: 227 70% 91%; /* text */
+    --popover: 240 21% 15%;     /* base */
+    --popover-foreground: 227 70% 91%; /* text */
+    --primary: 249 62% 80%;     /* lavender */
+    --primary-foreground: 240 21% 15%; /* base */
+    --secondary: 240 24% 10%;   /* mantle */
+    --secondary-foreground: 227 70% 91%; /* text */
+    --muted: 231 15% 41%;       /* surface1 */
+    --muted-foreground: 220 14% 85%;    /* subtext0 */
+    --accent: 249 62% 80%;      /* lavender */
+    --accent-foreground: 240 21% 15%;   /* base */
+    --destructive: 343 82% 75%; /* red */
+    --destructive-foreground: 227 70% 91%; /* text */
+    --border: 231 15% 25%;      /* surface0 */
+    --input: 231 15% 25%;       /* surface0 */
+    --ring: 249 62% 80%;        /* lavender */
+    --sidebar-background: 237 16% 16%;  /* crust slightly lighter */
+    --sidebar-foreground: 227 70% 91%;  /* text */
+    --sidebar-primary: 249 62% 80%;     /* lavender */
+    --sidebar-primary-foreground: 240 21% 15%; /* base */
+    --sidebar-accent: 231 15% 25%;      /* surface0 */
+    --sidebar-accent-foreground: 227 70% 91%; /* text */
+    --sidebar-border: 231 15% 25%;      /* surface0 */
+    --sidebar-ring: 249 62% 80%;        /* lavender */
   }
 
+  /* Keep the dark class for compatibility with ThemeProvider */
   .dark {
     /* Catppuccin Mocha dark mode colors */
     --background: 240 21% 15%;  /* base */

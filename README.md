@@ -41,13 +41,15 @@ Metricly is a modern, real-time monitoring dashboard for Docker containers and s
 
 ### UI Improvements
 
-- Fix sidebar collapse/expand lag - somehow fixed??
-- Make the background of the login page more dynamic and cool - tricky
+- Fix sidebar collapse/expand lag - sometimes there is not lag and sometimes there is
+- add a spinner to the container cards loading
+- maybe change the spinner for something cooler looking, like 3 dots maybe (grok's thingy)
 - Fix light mode theme and styling (proper light mode integration) - tricky (currently disabled)
 
 ### Data Integration
 
 - the uptime should be refreshed after the container has restarted
+- have the first server in the switch server dialog be automatically selected as soon as the page loads in
 - figure out the actual logic behind container's healthy status
 - The program currently can't fetch system metrics for remote servers (only works on localhost) - files like container.ts are hardcoded to use 127.0.0.1 as the default server ip
 

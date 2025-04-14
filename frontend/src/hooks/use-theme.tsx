@@ -1,15 +1,15 @@
-import { createContext, useContext, useEffect, useState } from "react";
+import React, { createContext, useContext } from "react";
 
-type Theme = "dark" | "light";
+// Only supporting dark theme for now
+type Theme = "dark";
 
 interface ThemeProviderProps {
   children: React.ReactNode;
-  defaultTheme?: Theme;
-  storageKey?: string;
 }
 
 interface ThemeProviderState {
   theme: Theme;
+  // Placeholder function for future theme switching
   setTheme: (theme: Theme) => void;
 }
 
@@ -22,25 +22,25 @@ const ThemeProviderContext = createContext<ThemeProviderState>(initialState);
 
 export function ThemeProvider({
   children,
-  defaultTheme = "dark",
-  storageKey = "metricly-ui-theme",
   ...props
 }: ThemeProviderProps) {
-  const [theme, setTheme] = useState<Theme>(
-    () => (localStorage.getItem(storageKey) as Theme) || defaultTheme
-  );
+  // Always use dark theme
+  const theme: Theme = "dark";
 
-  useEffect(() => {
-    const root = window.document.documentElement;
+  // Apply dark theme to document
+  React.useEffect(() => {
+    document.documentElement.classList.remove('light');
+    document.documentElement.classList.add('dark');
+  }, []);
 
-    root.classList.remove("light", "dark");
-    root.classList.add(theme);
-    localStorage.setItem(storageKey, theme);
-  }, [theme, storageKey]);
+  // Placeholder function for future theme switching
+  const handleThemeChange = () => {
+    console.log("Theme switching is not supported yet");
+  };
 
   const value = {
     theme,
-    setTheme: (theme: Theme) => setTheme(theme),
+    setTheme: () => handleThemeChange(),
   };
 
   return (
